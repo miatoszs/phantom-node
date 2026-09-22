@@ -31,7 +31,7 @@ A **PhantomNode OS** egy Debian 12 (Bookworm) vagy Kicksecure alapra épülő, �
 
 ---
 
-## 📦 Beépített Privacy Alkalmazáskatalógus (20 Tool)
+## 📦 Beépített Privacy Alkalmazáskatalógus (18 Tool)
 
 | Alkalmazás | Kategória | OPSEC Szint | Leírás |
 | :--- | :--- | :--- | :--- |
@@ -45,11 +45,9 @@ A **PhantomNode OS** egy Debian 12 (Bookworm) vagy Kicksecure alapra épülő, �
 | **SimpleX SMP & XFTP** | Encrypted Comms | OPSEC Level 3 | Metaadat-mentes, felhasználói azonosító nélküli (no user ID) chat- és média-kiszolgáló. |
 | **Matrix Synapse** | Encrypted Comms | OPSEC Level 2 | Föderált, E2EE csoportos kommunikációs szerver (Discord/Slack helyett). |
 | **Ollama + Open WebUI** | Private AI | OPSEC Level 2 | 100%-ban offline helyi AI (Gemma 3, Qwen, DeepSeek). Stylometry-védelem és fordítás felhő nélkül. |
-| **Uptime Kuma** | Monitoring | OPSEC Level 1 | Ön-hosztolt szerver- és szolgáltatás-monitorozó, leállás-riasztásokkal és státuszoldallal. |
 | **SearXNG** | Private Search | OPSEC Level 1 | Megfigyelés-mentes metakereső (Google, Bing, DuckDuckGo párhuzamos lekérdezése). |
 | **Invidious** | Media & Streaming | OPSEC Level 1 | Privát YouTube kliens reklámok, követők és Google-profilozás nélkül. |
 | **Redlib** | Private Social | OPSEC Level 1 | Pehelykönnyű, JavaScript-mentes Reddit frontend LibRedirect integrációval. |
-| **RustDesk Server** | Remote Access | OPSEC Level 2 | Saját privát távoli asztal elérés és relay szerver (TeamViewer és AnyDesk kiváltására). |
 | **I2Pd Darknet Router** | Encrypted Network | OPSEC Level 3 | Pehelykönnyű C++ I2P router, end-to-end titkosított decentralizált darknet kommunikációhoz. |
 | **Forgejo** | Development | OPSEC Level 1 | Ön-hosztolt Git szerver (GitHub alternatíva), Tor mögött, e-mail regisztráció nélkül. |
 | **Monero Node (`monerod`)** | Financial Privacy | OPSEC Level 3 | Saját teljes Monero blokklánc csomópont Tor/I2P RPC portokkal és P2Pool integrációval. |
@@ -87,6 +85,7 @@ Nyisd meg a böngésződben a kapott címet:
 ### Funkciók a Dashboardon:
 - **Rendszer Telemetria:** Valós idejű CPU, RAM, lemezhasználat és Tor állapot kijelzés.
 - **Privacy App Store & 1-Kattintásos Telepítés:** Egyetlen gombnyomással azonnal üzembe helyezhető bármely privacy stack.
+- **1-Kattintásos Konténer Frissítés:** A telepített alkalmazások kártyáján lévő **Update** gombbal egyetlen kattintással lehúzható a legújabb hivatalos Docker image és újraindul a konténer. A lap tetején lévő **Update All Containers** gombbal pedig az összes telepített alkalmazás egyszerre frissíthető.
 - **Haladó Beállítások (Advanced Options):** A fogaskerék ikonra kattintva egyéni helyi web portot, egyéni Tor .onion portot (alapértelmezett 80) és környezeti változókat (.env overrides) adhatsz meg a konténer indítása előtt.
 - **Onion & QR Center:** Bármely telepített alkalmazásnál a 🧅 Tor v3 gombra kattintva megjelenik a dedikált Tor `.onion` cím és egy azonnal beolvasható QR-kód a mobil Tor Browserhez.
 - **OPSEC Központ:** A jobb felső pajzs ikonra kattintva élesítheted a fizikai USB Dead Man's Switch védelmet, vagy vészhelyzet esetén aktiválhatod az azonnali kényszerített memóriatörlést és leállítást.
@@ -113,13 +112,16 @@ phantom app install nextcloud
 phantom app install adguard-home --port 8053
 phantom app install vaultwarden --advanced
 
-
 # Alkalmazás kezelése
 phantom app start <app_id>
 phantom app stop <app_id>
 phantom app restart <app_id>
 phantom app logs <app_id>
 phantom app remove <app_id>
+
+# Konténerek frissítése (legújabb Docker image-ek lehúzása és újraindítás)
+phantom app update <app_id>     # Egy adott konténer frissítése
+phantom app update-all          # Összes telepített konténer frissítése egyszerre
 
 # Aktív Tor v3 .onion címek listázása
 phantom onion list

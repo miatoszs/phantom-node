@@ -124,6 +124,19 @@ async def remove_app(app_id: str):
         raise HTTPException(status_code=400, detail=res.get("error", "Failed to remove app."))
     return res
 
+@app.post("/api/apps/update/{app_id}")
+async def update_app(app_id: str):
+    """Pulls the latest container image and restarts the app stack."""
+    res = docker_mgr.update_app(app_id)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to update container."))
+    return res
+
+@app.post("/api/apps/update-all")
+async def update_all_apps():
+    """Pulls the latest images and restarts all installed apps."""
+    return docker_mgr.update_all_apps()
+
 @app.get("/api/apps/logs/{app_id}")
 async def get_app_logs(app_id: str, lines: int = 100):
     logs = docker_mgr.get_logs(app_id, lines=lines)

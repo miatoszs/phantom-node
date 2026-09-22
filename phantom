@@ -51,6 +51,8 @@ def show_help():
   \033[36mapp start <app_id>\033[0m          Start an installed application
   \033[36mapp stop <app_id>\033[0m           Stop a running application
   \033[36mapp restart <app_id>\033[0m        Restart an application
+  \033[36mapp update <app_id>\033[0m         Pull latest container image & restart application
+  \033[36mapp update-all\033[0m              Pull latest images & update all installed apps
   \033[36mapp remove <app_id>\033[0m         Uninstall an application and remove its Tor onion
   \033[36mapp logs <app_id>\033[0m           View container logs for an application
   \033[36monion list\033[0m                  List all active Tor v3 Hidden Service (.onion) URLs
@@ -157,6 +159,27 @@ def cmd_app(args):
         fn = getattr(docker_mgr, f"{sub}_app")
         res = fn(app_id)
         print(f"[*] App {app_id} {sub} result: {'Success' if res.get('success') else res.get('error')}")
+    elif sub == "update":
+        if len(args) < 2:
+            print("[!] Please specify app_id: phantom app update <app_id> (or 'phantom app update-all')")
+            return
+        app_id = args[1]
+        print(f"[*] Pulling latest Docker image and updating '{app_id}'...")
+        res = docker_mgr.update_app(app_id)
+        if res.get("success"):
+            print(f"\033[32m[+] {res.get('message')}\033[0m")
+        else:
+            print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
+    elif sub in ["update-all", "upgrade-all"]:
+        print("[*] Pulling latest images and updating all installed containers...")
+        res = docker_mgr.update_all_apps()
+        if res.get("total", 0) == 0:
+            print("[*] No applications are currently installed.")
+            return
+        print(f"\033[32m[+] Updated {res.get('updated')}/{res.get('total')} installed applications.\033[0m")
+        for aid, r in res.get("results", {}).items():
+            st = "\033[32m[Updated]\033[0m" if r.get("success") else f"\033[31m[Failed: {r.get('error')}]\033[0m"
+            print(f"  - {aid}: {st}")
     elif sub == "remove":
         if len(args) < 2:
             print("[!] Please specify app_id: phantom app remove <app_id>")

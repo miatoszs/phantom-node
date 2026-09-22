@@ -277,6 +277,92 @@ class DockerManager:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
+    def update_app(self, app_id: str) -> Dict:
+        """
+        Updates an installed container stack to its latest image:
+        1. Executes `docker compose pull`.
+        2. Executes `docker compose up -d` to recreate containers with the new image.
+        3. Cleans up dangling unused images with `docker image prune -f`.
+        """
+        app_path = self.installed_dir / app_id
+        if not app_path.exists():
+            return {"success": False, "error": f"App '{app_id}' is not installed."}
+
+        try:
+            # 1. Pull latest Docker images
+            pull_res = subprocess.run(
+                ["docker", "compose", "pull"],
+                cwd=str(app_path),
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            if pull_res.returncode != 0:
+                err = pull_res.stderr.strip() or pull_res.stdout.strip()
+                return {
+                    "success": False,
+                    "error": f"Docker pull failed: {err}"
+                }
+
+            # 2. Re-create / restart containers with latest images
+            up_res = subprocess.run(
+                ["docker", "compose", "up", "-d"],
+                cwd=str(app_path),
+                capture_output=True,
+                text=True,
+                timeout=180
+            )
+            if up_res.returncode != 0:
+                err = up_res.stderr.strip() or up_res.stdout.strip()
+                return {
+                    "success": False,
+                    "error": f"Docker up failed: {err}"
+                }
+
+            # 3. Clean up dangling images
+            try:
+                subprocess.run(["docker", "image", "prune", "-f"], capture_output=True, timeout=30)
+            except Exception:
+                pass
+
+            manifest = self.get_app_manifest(app_id) or {}
+            app_name = manifest.get("name", app_id)
+            return {
+                "success": True,
+                "message": f"{app_name} successfully updated to the latest container image and restarted.",
+                "app_id": app_id
+            }
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": f"Update timed out while pulling container images for {app_id}."}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def update_all_apps(self) -> Dict:
+        """Updates all currently installed apps."""
+        results = {}
+        apps = self.list_available_apps()
+        installed = [a for a in apps if a.get("is_installed")]
+
+        if not installed:
+            return {
+                "success": True,
+                "total": 0,
+                "updated": 0,
+                "message": "No applications are currently installed."
+            }
+
+        for app in installed:
+            app_id = app["id"]
+            results[app_id] = self.update_app(app_id)
+
+        success_count = sum(1 for r in results.values() if r.get("success"))
+        return {
+            "success": True,
+            "total": len(installed),
+            "updated": success_count,
+            "results": results
+        }
+
     def get_logs(self, app_id: str, lines: int = 100) -> str:
         """Retrieves container logs for an app."""
         app_path = self.installed_dir / app_id

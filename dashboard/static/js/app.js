@@ -15,6 +15,7 @@ const ICONS = {
     trash: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
     deploy: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
     settings: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+    refresh: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`,
     spinner: `<svg class="btn-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle></svg>`
 };
 
@@ -34,6 +35,7 @@ function initTabs() {
             tabBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentTab = btn.dataset.tab;
+            updateCounters();
             renderApps();
         });
     });
@@ -116,6 +118,11 @@ function updateCounters() {
     const elCatalog = document.getElementById('catalog-counter');
     if (elInstalled) elInstalled.innerText = installedCount;
     if (elCatalog) elCatalog.innerText = catalogCount;
+
+    const updateAllBtnContainer = document.getElementById('installed-actions');
+    if (updateAllBtnContainer) {
+        updateAllBtnContainer.style.display = (currentTab === 'installed' && installedCount > 0) ? 'flex' : 'none';
+    }
 }
 
 function renderApps() {
@@ -170,6 +177,10 @@ function renderApps() {
             <button class="btn btn-secondary" onclick="toggleAppState('${app.id}', ${isRunning})">
                 ${isRunning ? ICONS.pause : ICONS.play}
                 <span>${isRunning ? 'Stop' : 'Start'}</span>
+            </button>
+            <button class="btn btn-secondary" id="btn-update-${app.id}" onclick="updateApp('${app.id}', '${app.name}')" title="Pull latest Docker image & restart container">
+                ${ICONS.refresh}
+                <span>Update</span>
             </button>
             <button class="btn btn-secondary" onclick="showLogsModal('${app.id}', '${app.name}')">
                 ${ICONS.terminal}
@@ -290,6 +301,68 @@ async function uninstallApp(appId, appName) {
         }
     } catch (e) {
         showToast('Network error during removal.', 'error');
+    }
+}
+
+async function updateApp(appId, appName) {
+    const btn = document.getElementById(`btn-update-${appId}`);
+    if (btn) {
+        btn.innerHTML = `${ICONS.spinner} <span>Updating...</span>`;
+        btn.disabled = true;
+    }
+
+    showToast(`Pulling latest Docker image for ${appName || appId}...`, 'info');
+
+    try {
+        const res = await fetch(`/api/apps/update/${appId}`, { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`${appName || appId} updated to latest image!`, 'success');
+            await fetchApps();
+        } else {
+            showToast(`Update error: ${data.detail || data.error || 'Failed to update.'}`, 'error');
+            if (btn) {
+                btn.innerHTML = `${ICONS.refresh} <span>Update</span>`;
+                btn.disabled = false;
+            }
+        }
+    } catch (e) {
+        showToast(`Network error while updating ${appName || appId}.`, 'error');
+        if (btn) {
+            btn.innerHTML = `${ICONS.refresh} <span>Update</span>`;
+            btn.disabled = false;
+        }
+    }
+}
+
+async function updateAllApps() {
+    const btn = document.getElementById('btn-update-all-apps');
+    if (btn) {
+        btn.innerHTML = `${ICONS.spinner} <span>Updating Containers...</span>`;
+        btn.disabled = true;
+    }
+
+    showToast('Pulling latest Docker images for all installed apps...', 'info');
+
+    try {
+        const res = await fetch('/api/apps/update-all', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            showToast(`Updated ${data.updated}/${data.total} containers successfully!`, 'success');
+            await fetchApps();
+        } else {
+            showToast(`Failed to update containers: ${data.detail || 'Error'}`, 'error');
+        }
+    } catch (e) {
+        showToast('Network error while updating containers.', 'error');
+    } finally {
+        if (btn) {
+            btn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>Update All Containers</span>
+            `;
+            btn.disabled = false;
+        }
     }
 }
 
