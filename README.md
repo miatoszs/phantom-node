@@ -1,64 +1,68 @@
 # PhantomNode OS 👻
 ## The Sovereign, Privacy-First & Anti-Forensics Server OS (Debian-based)
-*Inspirálva az OPSEC Bible és a "Digitális Eltűnés, Üzleti Anonimitás és Adatszuverenitás" kurzus által.*
+*Engineered for maximum data sovereignty, strict operational security (OPSEC), and physical anti-forensics.*
 
 ---
 
-## 🌟 Mi az a PhantomNode OS?
+## 🌟 What is PhantomNode OS?
 
-A **PhantomNode OS** egy Debian 12 (Bookworm) vagy Kicksecure alapra épülő, önálló szerver operációs környezet, amely a **CasaOS és az Umbrel** felhasználóbarát, vizuális élményét (reszponzív Web Dashboard, 1-kattintásos App Store, egyszerű menedzsment) ötvözi a legszigorúbb **OPSEC Level 1–4** adatvédelmi, kiberbiztonsági és anonimitási követelményekkel.
+**PhantomNode OS** is a self-hosted, sovereign server operating environment built on Debian 12 (Bookworm) and Kicksecure. It combines the clean, visual user experience of **CasaOS and Umbrel** (responsive Web Dashboard, 1-Click App Store, real-time system telemetry) with stringent **OPSEC Level 1–4** cybersecurity, cryptography, and anti-forensics principles.
 
-### Miért nem biztonságos a sima CasaOS vagy Umbrel a tanfolyamod fenyegetettségi modelljéhez?
-- **IP-kiszivárgás:** A hagyományos otthoni felhő OS-ek megkövetelik a router port-továbbítást (UPnP / port forwarding) és a felhős dinamikus DNS regisztrációt. Ezzel a felhasználó otthoni IP-címe és valós földrajzi tartózkodási helye azonnal lelepleződik az internetszolgáltatók és támadók előtt.
-- **Nincs Tor v3 szeparáció:** Nem biztosítanak izolált Tor rejtett szolgáltatásokat alkalmazásonként.
-- **DNS szivárgások:** Nem akadályozzák meg, hogy a konténerek megkerüljék a helyi DNS-szűrőket.
-- **Hiányzó Anti-Forensics védelem:** Nem tartalmaznak vészhelyzeti hardveres megsemmisítő vagy újraindító védelmeket fizikai rajtaütés esetén.
-
----
-
-## 🛡️ A PhantomNode Védelmi Architektúrája
-
-1. **Zero-Port-Forwarding (Nulla Router Módosítás):**
-   Minden telepített alkalmazás kizárólag a helyi loopback felületen (`127.0.0.1`) és egy automatikusan legenerált, kriptográfiailag hitelesített **Tor v3 Hidden Service (`.onion`)** címen érhető el. Bárhonnan elérhető a világból Tor Browser vagy mobil Orbot segítségével, miközben a szerver otthoni IP-je sosem szivárog ki.
-2. **DNS Leak Proofing:**
-   A konténerek nem tudnak külső Google/Cloudflare DNS szerverekre kijutni (`dns: 127.0.0.1` és belső Unbound/Tor feloldás).
-3. **Kernel & Network Sysctl Hardening:**
-   Letiltott TCP időbélyegek (anti-uptime fingerprinting), spoofing elleni védelem (rp_filter), ICMP redirect tiltás, BPF JIT védelem, dmesg korlátozás.
-4. **Fizikai Anti-Forensics Védelmi Triggerek:**
-   - **USB Dead Man's Switch (`nukeusb`):** Ha egy támadó vagy hatóság külső USB eszközt csatlakoztat (vagy kihúzza a meglévőt), a szerver azonnal kiüríti a memóriát és kényszerített leállítást (`poweroff -f`) hajt végre.
-   - **HID Input Trap (`emergency-hid`):** Fizikai egérmozgásra vagy billentyűzetleütésre reagáló pánikleállítás.
-   - **1-Kattintásos Vészhelyzeti Pánik Gomb:** Azonnali lemez/RAM gyorsítótár ürítés és leállítás a Dashboardról.
+### Why standard CasaOS or Umbrel are not enough for high-threat OPSEC models:
+- **IP & Geolocation Leaks:** Conventional home cloud systems require router port forwarding (UPnP / NAT traversal) or centralized dynamic DNS. This exposes the operator's real residential IP address, ISP identity, and physical location to network observers and automated port scanners.
+- **Lack of Tor v3 Service Isolation:** Traditional setups do not dynamically generate isolated, per-service Tor v3 `.onion` endpoints with end-to-end cryptographic authentication.
+- **DNS Leak Vectors:** Default container configurations frequently bypass local recursive DNS resolvers and leak domain queries to ISP or upstream DNS servers.
+- **No Physical Anti-Forensics Protections:** Standard home servers provide zero hardware-level defenses against physical device seizure, cold-boot memory extraction, or unauthorized USB access.
 
 ---
 
-## 📦 Beépített Privacy Alkalmazáskatalógus (18 Tool)
+## 🛡️ PhantomNode Defense Architecture
 
-| Alkalmazás | Kategória | OPSEC Szint | Leírás |
+1. **Zero-Port-Forwarding & Tor v3 Isolation:**
+   Every deployed application runs strictly without router port forwarding. Remote access is powered by cryptographic **Tor v3 Hidden Services (`.onion`)**, accessible from anywhere in the world via Tor Browser or Orbot without leaking the server's public IP address.
+2. **Local LAN + Tor Dual Accessibility:**
+   Containers bind to all local network interfaces (`0.0.0.0`) inside a hardened UFW firewall zone, allowing seamless local network access (`http://<LAN_IP>:<Port>`) alongside the private `.onion` link.
+3. **Automated Port Conflict Resolution:**
+   Before deploying any container, PhantomNode scans both host sockets and installed service manifests. If a requested port is already occupied (e.g. port 3000), it automatically allocates the nearest available free port, preventing deployment failures.
+4. **DNS Leak Proofing:**
+   Containers are prevented from querying external commercial DNS resolvers. All queries are resolved through local recursive Unbound instances, AdGuard Home, or Tor-based encrypted resolvers.
+5. **Kernel & Network Sysctl Hardening:**
+   TCP timestamps are disabled to prevent uptime-based OS fingerprinting. Additional protections include reverse-path filtering (`rp_filter`), ICMP redirect denial, BPF JIT hardening, restricted `dmesg` access, and kernel panic reboot mitigations.
+6. **Physical Anti-Forensics Triggers:**
+   - **USB Dead Man's Switch (`nukeusb`):** If an unauthorized USB device is inserted (or a monitored USB token is pulled), the system instantly flushes memory buffers and forces an emergency power shutdown (`poweroff -f`).
+   - **HID Input Trap (`emergency-hid`):** Monitored mouse movement or unauthorized keyboard input on a headless server immediately triggers an emergency halt.
+   - **1-Click Emergency Panic Button:** Instant memory flush, swap wipe, and forced shutdown directly from the Web Dashboard.
+
+---
+
+## 📦 Built-In Privacy Application Catalog (18 Tools)
+
+| Application | Category | OPSEC Level | Description |
 | :--- | :--- | :--- | :--- |
-| **AdGuard Home** | Network & DNS | OPSEC Level 1 | Teljes hálózati szintű DNS hirdetés-, tracking- és malware-blokkoló, DoH / DoT titkosított lekérdezésekkel. |
-| **Nextcloud** | Cloud & Storage | OPSEC Level 2 | Saját felhőtárhely és szinkronizáció (Google Drive / OneDrive helyett) dedikált Tor proxyval. |
-| **Vaultwarden** | Passwords & Auth | OPSEC Level 1 | Végponttól-végpontig titkosított (E2EE) jelszókezelő, hivatalos Bitwarden kliens támogatással. |
-| **WireGuard (WG-Easy)** | Encrypted Network | OPSEC Level 2 | Rendkívül gyors és modern WireGuard VPN szerver webes felülettel és 1-kattintásos QR kliensgenerálással. |
-| **Syncthing** | Continuous Sync | OPSEC Level 1 | Közvetlen P2P E2EE mappaszinkronizáció központi szerver nélkül, automatikus újracsatlakozással. |
-| **FileBrowser** | Cloud & Storage | OPSEC Level 1 | Pehelykönnyű, letisztult webes fájlkezelő és privát dokumentumtár gyors fájlmegosztással. |
-| **Pi-hole + Unbound** | Network & DNS | OPSEC Level 1 | Hálózati reklám- és telemetria-szűrő, teljesen független saját rekurzív gyökér-DNS szerverrel. |
-| **SimpleX SMP & XFTP** | Encrypted Comms | OPSEC Level 3 | Metaadat-mentes, felhasználói azonosító nélküli (no user ID) chat- és média-kiszolgáló. |
-| **Matrix Synapse** | Encrypted Comms | OPSEC Level 2 | Föderált, E2EE csoportos kommunikációs szerver (Discord/Slack helyett). |
-| **Ollama + Open WebUI** | Private AI | OPSEC Level 2 | 100%-ban offline helyi AI (Gemma 3, Qwen, DeepSeek). Stylometry-védelem és fordítás felhő nélkül. |
-| **SearXNG** | Private Search | OPSEC Level 1 | Megfigyelés-mentes metakereső (Google, Bing, DuckDuckGo párhuzamos lekérdezése). |
-| **Invidious** | Media & Streaming | OPSEC Level 1 | Privát YouTube kliens reklámok, követők és Google-profilozás nélkül. |
-| **Redlib** | Private Social | OPSEC Level 1 | Pehelykönnyű, JavaScript-mentes Reddit frontend LibRedirect integrációval. |
-| **I2Pd Darknet Router** | Encrypted Network | OPSEC Level 3 | Pehelykönnyű C++ I2P router, end-to-end titkosított decentralizált darknet kommunikációhoz. |
-| **Forgejo** | Development | OPSEC Level 1 | Ön-hosztolt Git szerver (GitHub alternatíva), Tor mögött, e-mail regisztráció nélkül. |
-| **Monero Node & Dashboard** | Financial Privacy | OPSEC Level 3 | Saját teljes Monero blokklánc csomópont és beépített valós idejű webes felügyeleti dashboard (blokkmagasság, peer kapcsolatok, hashrate). |
-| **BorgBackup Server** | Backup & Recovery | OPSEC Level 2 | Deduplikált, kliensoldali AES-256 titkosítású biztonsági mentési tárhely SSH over Tor-on át. |
-| **Cockpit Console** | System Admin | OPSEC Level 1 | Rendszer- és hardverkezelő webkonzol (CPU, RAM, lemezek, virtuális gépek felügyelete). |
+| **AdGuard Home** | Network & DNS | OPSEC Level 1 | Network-wide ad, tracker, and malware blocker with encrypted upstream DNS (DoH, DoT, DoQ). |
+| **Monero Node & Dashboard** | Financial Privacy | OPSEC Level 3 | Full validating Monero (XMR) blockchain node with real-time web dashboard (block height, sync progress, peers). |
+| **Nextcloud Hub** | Cloud & Storage | OPSEC Level 2 | Self-hosted sovereign cloud storage, calendar, and contacts behind isolated Tor onion routing. |
+| **Vaultwarden** | Passwords & Auth | OPSEC Level 1 | Lightweight Bitwarden-compatible password vault written in Rust with zero-knowledge client encryption. |
+| **WireGuard (WG-Easy)** | Encrypted Network | OPSEC Level 2 | High-performance WireGuard VPN server with responsive Web UI and 1-click QR code client profile generator. |
+| **I2Pd Darknet Router** | Encrypted Network | OPSEC Level 3 | Lightweight C++ Invisible Internet Project (I2P) router with built-in HTTP and SOCKS5 client proxies. |
+| **SimpleX Chat Server** | Encrypted Comms | OPSEC Level 3 | Sovereign SMP message broker and XFTP media relay without user identifiers, phone numbers, or metadata graphs. |
+| **Matrix Synapse** | Encrypted Comms | OPSEC Level 2 | Federated, end-to-end encrypted team chat and voice communications server compatible with Element. |
+| **Syncthing** | Continuous Sync | OPSEC Level 1 | Decentralized, peer-to-peer file synchronization system encrypted in transit without central storage. |
+| **FileBrowser** | Cloud & Storage | OPSEC Level 1 | Clean, lightweight web-based file manager for uploading, editing, and sharing files over LAN or Tor. |
+| **Pi-hole + Unbound** | Network & DNS | OPSEC Level 1 | Network-wide telemetry blocker paired with an independent, local recursive root DNS resolver. |
+| **Ollama + Open WebUI** | Private AI | OPSEC Level 2 | 100% offline local neural language models (Gemma, DeepSeek, Qwen) with ChatGPT-style web interface. |
+| **SearXNG** | Private Search | OPSEC Level 1 | Privacy-respecting metasearch engine combining results across 70+ engines without search profiling. |
+| **Invidious** | Media & Streaming | OPSEC Level 1 | Lightweight, ad-free YouTube frontend operating without Google accounts, cookies, or JavaScript bloat. |
+| **Redlib** | Private Social | OPSEC Level 1 | Private, privacy-friendly Reddit frontend with clean UI and zero tracking cookies. |
+| **Forgejo** | Development | OPSEC Level 1 | Self-hosted Git software forge (Gitea community fork) with SSH repository access over LAN and Tor. |
+| **BorgBackup Server** | Backup & Recovery | OPSEC Level 2 | Deduplicating, authenticated, and AES-256 encrypted remote backup repository over SSH. |
+| **Cockpit Console** | System Admin | OPSEC Level 1 | System and hardware management web console for monitoring CPU, RAM, storage, and system services. |
 
 ---
 
-## 🚀 Gyors Telepítés (Debian 12 / Kicksecure)
+## 🚀 Quick Installation (Debian 12 / Kicksecure)
 
-Egy frissen telepített Debian 12 Minimal vagy Kicksecure rendszeren futtasd az alábbi egyetlen parancsot:
+On a clean installation of **Debian 12 Minimal** or **Kicksecure**, run the following commands:
 
 ```bash
 git clone https://github.com/miatoszs/phantom-node.git
@@ -66,79 +70,83 @@ cd phantom-node
 sudo ./install.sh
 ```
 
-A telepítő szkript automatikusan:
-1. Telepíti a Docker Engine-t, Docker Compose plugint és a Tor komponenst.
-2. Beállítja a virtuális Python környezetet és a FastAPI webes Dashboardot.
-3. Bekapcsolja a Master Dashboard Tor v3 Hidden Service-t és legenerálja az `.onion` címet.
-4. Alkalmazza a kernel sysctl és UFW Zero-WAN tűzfal szigorításokat.
-5. Elindítja a `phantom-dashboard.service` háttérszolgáltatást.
-6. Kiírja a helyi LAN IP-t (`http://192.168.x.x:7426`) és a privát Tor `.onion` címet.
+### What the installer automatically configures:
+1. Installs Docker Engine, Docker Compose plugin, and Tor daemon.
+2. Creates an isolated Python virtual environment and sets up the asynchronous FastAPI Web Dashboard.
+3. Automatically provisions the Master Dashboard Tor v3 Hidden Service (`.onion`).
+4. Applies strict kernel sysctl hardening and configures the UFW firewall.
+5. Registers and enables `phantom-dashboard.service` under systemd.
+6. Displays the local LAN dashboard URL (`http://<LAN_IP>:7426`) and the private Master `.onion` address.
 
 ---
 
-## 🖥️ A Vezérlőpult Használata
+## 🖥️ Web Dashboard Features
 
-Nyisd meg a böngésződben a kapott címet:
-- **Helyi hálózaton:** `http://<szerver-ip>:7426`
-- **Távolról (bárhonnan a világból):** `http://<master-onion-address>.onion` (Tor Browserben)
+Open the dashboard in your web browser:
+- **Local Network:** `http://<server-ip>:7426`
+- **Remote Access (Worldwide):** `http://<master-onion-address>.onion` (in Tor Browser)
 
-### Funkciók a Dashboardon:
-- **Rendszer Telemetria:** Valós idejű CPU, RAM, lemezhasználat és Tor állapot kijelzés.
-- **Privacy App Store & 1-Kattintásos Telepítés:** Egyetlen gombnyomással azonnal üzembe helyezhető bármely privacy stack.
-- **1-Kattintásos Konténer Frissítés:** A telepített alkalmazások kártyáján lévő **Update** gombbal egyetlen kattintással lehúzható a legújabb hivatalos Docker image és újraindul a konténer. A lap tetején lévő **Update All Containers** gombbal pedig az összes telepített alkalmazás egyszerre frissíthető.
-- **Haladó Beállítások (Advanced Options):** A fogaskerék ikonra kattintva egyéni helyi web portot, egyéni Tor .onion portot (alapértelmezett 80) és környezeti változókat (.env overrides) adhatsz meg a konténer indítása előtt.
-- **Onion & QR Center:** Bármely telepített alkalmazásnál a 🧅 Tor v3 gombra kattintva megjelenik a dedikált Tor `.onion` cím és egy azonnal beolvasható QR-kód a mobil Tor Browserhez.
-- **OPSEC Központ:** A jobb felső pajzs ikonra kattintva élesítheted a fizikai USB Dead Man's Switch védelmet, vagy vészhelyzet esetén aktiválhatod az azonnali kényszerített memóriatörlést és leállítást.
-- **1-Kattintásos Rendszerfrissítés (OTA):** A fejlécben lévő verziószámra kattintva a rendszer automatikusan ellenőrzi a GitHub kiadásokat és gombnyomásra frissíti a kódbázist valamint újraindítja a démont.
+### Key Dashboard Capabilities:
+- **Live Telemetry:** Real-time monitoring of CPU load, RAM allocation, NVMe/SSD storage, uptime, and Tor status.
+- **Privacy App Store:** 1-Click deployment for sovereign privacy tools with auto-generated onion services.
+- **Advanced Custom Deployment:** Configure custom web ports, custom Tor onion ports, and `.env` environment overrides before starting containers.
+- **App Information & Port Mapping Modal:** Dedicated **Info** button on installed apps displaying:
+  - Complete list of active network ports (Web console, Node RPC, P2P sync, DNS, SOCKS/HTTP proxy, SSH, etc.).
+  - 1-Click endpoint clipboard copy (e.g. `192.168.2.229:18081`).
+  - Tailored client setup guides (Feather Wallet, Bitwarden extension, WireGuard profiles, DNS resolvers, etc.).
+- **1-Click Container Updates:** Update individual container stacks with a single button or click **Update All Containers** to pull the latest images and restart all active apps.
+- **1-Click System OTA Updater:** Check GitHub for new PhantomNode OS releases directly from the header version badge and apply updates with zero downtime.
+- **Tor v3 & QR Center:** Display dedicated `.onion` addresses with one-click copy and scannable QR codes for mobile Tor Browser access.
+- **OPSEC Control Center:** Arm or disarm the hardware USB Dead Man's Switch, check defensive triggers, or execute an emergency memory wipe and shutdown.
 
 ---
 
-## ⌨️ `phantom` Parancssori Eszköz (CLI)
+## ⌨️ `phantom` CLI Reference
 
-A terminálból elérhető a teljes rendszervezérlés:
+Full command-line system management is available directly from the terminal:
 
 ```bash
-# Általános rendszerállapot, Tor hálózat és futó alkalmazások
+# View system health, Tor status, and active containers
 phantom status
 
-# Elérhető és telepített alkalmazások listázása
+# List all available catalog apps and their installation status
 phantom app list
 
-# Alkalmazás gyors telepítése
+# 1-Click app deployment
 phantom app install adguard-home
 phantom app install nextcloud
 
-# Alkalmazás telepítése egyéni porttal vagy interaktív haladó módban
+# Deploy with custom port or interactive advanced settings
 phantom app install adguard-home --port 8053
 phantom app install vaultwarden --advanced
 
-# Alkalmazás kezelése
+# Manage container lifecycle
 phantom app start <app_id>
 phantom app stop <app_id>
 phantom app restart <app_id>
 phantom app logs <app_id>
 phantom app remove <app_id>
 
-# Konténerek frissítése (legújabb Docker image-ek lehúzása és újraindítás)
-phantom app update <app_id>     # Egy adott konténer frissítése
-phantom app update-all          # Összes telepített konténer frissítése egyszerre
+# Update containers (pull latest Docker images & restart stacks)
+phantom app update <app_id>     # Update a specific container
+phantom app update-all          # Update all installed containers simultaneously
 
-# Aktív Tor v3 .onion címek listázása
+# List all active Tor v3 Hidden Service addresses
 phantom onion list
 
-# OPSEC Shield és USB Dead Man's Switch kezelése
+# OPSEC Shield and hardware protection
 phantom opsec status
-phantom opsec arm-usb       # USB védelem élesítése
-phantom opsec disarm-usb    # USB védelem kikapcsolása
-phantom opsec panic         # Vészhelyzeti azonnali leállítás
+phantom opsec arm-usb       # Arm the USB Dead Man's Switch
+phantom opsec disarm-usb    # Disarm USB defense
+phantom opsec panic         # Trigger immediate emergency shutdown & memory flush
 
-# Rendszerfrissítés (OTA 1-Click Update)
-phantom update check        # Új verziók keresése a GitHubon
-phantom update              # Rendszer automatikus frissítése és újraindítása
+# System OTA Updates
+phantom update check        # Check for upstream releases on GitHub
+phantom update              # Download latest changes and restart services
 ```
 
 ---
 
-## 🔒 Biztonsági és Jogi Tudnivalók
-- A rendszer kizárólag a személyes és üzleti adatszuverenitás, a törvényes magánszféra és a kiberbiztonsági védelem céljaira készült.
-- A szoftverek konfigurációja a kurzus anyagában részletezett **4 Szintű OPSEC Modell** mentén lett optimalizálva.
+## 🔒 Security & Operational Notice
+- PhantomNode OS is designed strictly for personal and business data sovereignty, legitimate privacy preservation, and cybersecurity defense.
+- Container configurations and network isolation mechanisms are built around the **4-Tier OPSEC Model**.
