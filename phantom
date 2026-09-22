@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+# ==============================================================================
+# PhantomNode OS - Command Line Management Interface (CLI)
+# ==============================================================================
+import sys
+import os
+from pathlib import Path
+
+# Add project root to sys.path
+SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPT_DIR))
+
+# Ensure execution in isolated venv if installed
+venv_py = Path("/opt/phantom-node/venv/bin/python3")
+if venv_py.exists() and sys.executable != str(venv_py.resolve()):
+    try:
+        os.execv(str(venv_py), [str(venv_py)] + sys.argv)
+    except Exception:
+        pass
+
+from core.docker_manager import DockerManager
+from core.tor_manager import TorManager
+from core.opsec_manager import OpsecManager
+from core.system_manager import SystemManager
+
+docker_mgr = DockerManager()
+tor_mgr = TorManager()
+opsec_mgr = OpsecManager()
+system_mgr = SystemManager()
+
+def print_banner():
+    print("""
+    \033[1;36m
+    ██████╗ ██╗  ██╗ █████╗ ███╗   ██╗████████╗ ██████╗ ███╗   ███╗
+    ██╔══██╗██║  ██║██╔══██╗████╗  ██║╚══██╔══╝██╔═══██╗████╗ ████║
+    ██████╔╝███████║███████║██╔██╗ ██║   ██║   ██║   ██║██╔████╔██║
+    ██╔═══╝ ██╔══██║██╔══██║██║╚██╗██║   ██║   ██║   ██║██║╚██╔╝██║
+    ██║     ██║  ██║██║  ██║██║ ╚████║   ██║   ╚██████╔╝██║ ╚═╝ ██║
+    ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝
+                    \033[1;35mN O D E   O S\033[0m
+    """)
+
+def show_help():
+    print_banner()
+    print("""\033[1mUsage:\033[0m phantom <command> [arguments]
+
+\033[1mCommands:\033[0m
+  \033[36mstatus\033[0m                      Show system health, Tor status, and running apps
+  \033[36mapp list\033[0m                    List all available and installed privacy apps
+  \033[36mapp install <app_id>\033[0m        Install and launch an application from the catalog
+  \033[36mapp start <app_id>\033[0m          Start an installed application
+  \033[36mapp stop <app_id>\033[0m           Stop a running application
+  \033[36mapp restart <app_id>\033[0m        Restart an application
+  \033[36mapp remove <app_id>\033[0m         Uninstall an application and remove its Tor onion
+  \033[36mapp logs <app_id>\033[0m           View container logs for an application
+  \033[36monion list\033[0m                  List all active Tor v3 Hidden Service (.onion) URLs
+  \033[36mopsec status\033[0m                Check USB switch, firewall and kernel hardening
+  \033[36mopsec arm-usb\033[0m               Arm the USB Dead Man's Switch
+  \033[36mopsec disarm-usb\033[0m            Disarm the USB Dead Man's Switch
+  \033[36mopsec panic\033[0m                 Trigger immediate emergency shutdown & cache drop
+  \033[36mupdate [check]\033[0m              Check or apply 1-click PhantomNode OS updates
+    """)
+
+def cmd_status():
+    print_banner()
+    tor_active = tor_mgr.is_tor_active()
+    tor_status = "\033[32mActive (v3 Hidden Services Ready)\033[0m" if tor_active else "\033[31mInactive\033[0m"
+    opsec_status = opsec_mgr.get_opsec_status()
+    usb_status = "\033[32mARMED\033[0m" if opsec_status["usb_switch_armed"] else "\033[33mDisarmed\033[0m"
+
+    print(f"  \033[1mTor Network:\033[0m           {tor_status}")
+    print(f"  \033[1mUSB Dead Man's Switch:\033[0m {usb_status}")
+    print(f"  \033[1mUFW WAN Shield:\033[0m        {'\033[32mActive\033[0m' if opsec_status['ufw_active'] else '\033[33mInactive\033[0m'}")
+    print(f"  \033[1mKernel Hardening:\033[0m      {'\033[32mApplied\033[0m' if opsec_status['sysctl_hardened'] else '\033[33mDefault\033[0m'}")
+
+    apps = docker_mgr.list_available_apps()
+    installed = [a for a in apps if a.get("is_installed")]
+    print(f"\n  \033[1mInstalled Applications ({len(installed)}):\033[0m")
+    for app in installed:
+        status_color = "\033[32m[Running]\033[0m" if app.get("is_running") else "\033[31m[Stopped]\033[0m"
+        onion = app.get("onion") or "No onion"
+        print(f"    - \033[1m{app['id']}\033[0m ({app['name']}): {status_color} -> http://{onion}")
+
+def cmd_app(args):
+    if not args:
+        show_help()
+        return
+
+    sub = args[0]
+    if sub == "list":
+        apps = docker_mgr.list_available_apps()
+        print("\n\033[1m=== PhantomNode Privacy App Catalog ===\033[0m\n")
+        print(f"{'ID':<18} {'NAME':<28} {'CATEGORY':<18} {'OPSEC':<10} {'STATUS'}")
+        print("-" * 85)
+        for a in apps:
+            if a.get("is_installed"):
+                st = "\033[32mInstalled (Running)\033[0m" if a.get("is_running") else "\033[33mInstalled (Stopped)\033[0m"
+            else:
+                st = "Available"
+            print(f"{a['id']:<18} {a['name']:<28} {a['category']:<18} {a['opsec_level']:<10} {st}")
+    elif sub == "install":
+        if len(args) < 2:
+            print("[!] Please specify app_id: phantom app install <app_id>")
+            return
+        app_id = args[1]
+        print(f"[*] Installing {app_id}...")
+        res = docker_mgr.install_app(app_id)
+        if res.get("success"):
+            print(f"\033[32m[+] Successfully installed {app_id}!\033[0m")
+            if res.get("onion"):
+                print(f"[*] Tor .onion URL: http://{res['onion']}")
+            print(f"[*] Local LAN Port: {res.get('web_port')}")
+        else:
+            print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
+    elif sub in ["start", "stop", "restart"]:
+        if len(args) < 2:
+            print(f"[!] Please specify app_id: phantom app {sub} <app_id>")
+            return
+        app_id = args[1]
+        fn = getattr(docker_mgr, f"{sub}_app")
+        res = fn(app_id)
+        print(f"[*] App {app_id} {sub} result: {'Success' if res.get('success') else res.get('error')}")
+    elif sub == "remove":
+        if len(args) < 2:
+            print("[!] Please specify app_id: phantom app remove <app_id>")
+            return
+        app_id = args[1]
+        confirm = input(f"Are you sure you want to remove '{app_id}'? (y/N): ")
+        if confirm.lower() == 'y':
+            res = docker_mgr.remove_app(app_id)
+            print(f"[*] {res.get('message', res.get('error'))}")
+    elif sub == "logs":
+        if len(args) < 2:
+            print("[!] Please specify app_id: phantom app logs <app_id>")
+            return
+        app_id = args[1]
+        print(docker_mgr.get_logs(app_id, lines=50))
+    else:
+        show_help()
+
+def cmd_onion():
+    services = tor_mgr.list_services()
+    print("\n\033[1m=== PhantomNode Active Tor v3 Hidden Services ===\033[0m\n")
+    if not services:
+        print("  No hidden services found.")
+        return
+    for s in services:
+        print(f"  \033[36m{s['service_id']:<20}\033[0m -> http://{s['onion']}")
+
+def cmd_opsec(args):
+    if not args or args[0] == "status":
+        st = opsec_mgr.get_opsec_status()
+        print("\n\033[1m=== PhantomNode OPSEC & Anti-Forensics Status ===\033[0m\n")
+        print(f"  USB Dead Man's Switch (nukeusb): {'\033[32mARMED\033[0m' if st['usb_switch_armed'] else '\033[33mDisarmed\033[0m'}")
+        print(f"  HID Tamper Trap:                {'\033[32mARMED\033[0m' if st['hid_trap_armed'] else '\033[33mDisarmed\033[0m'}")
+        print(f"  UFW Firewall (Zero WAN):        {'\033[32mActive\033[0m' if st['ufw_active'] else '\033[31mInactive\033[0m'}")
+        print(f"  Kernel Sysctl Hardening:        {'\033[32mApplied\033[0m' if st['sysctl_hardened'] else '\033[33mDefault\033[0m'}")
+    elif args[0] == "arm-usb":
+        res = opsec_mgr.set_usb_switch(True)
+        print(f"[*] {res.get('message', res.get('error'))}")
+    elif args[0] == "disarm-usb":
+        res = opsec_mgr.set_usb_switch(False)
+        print(f"[*] {res.get('message', res.get('error'))}")
+    elif args[0] == "panic":
+        confirm = input("\033[31m[DANGER] This will IMMEDIATELY flush RAM caches and power off the machine! Proceed? (yes/NO): \033[0m")
+        if confirm == "yes":
+            opsec_mgr.trigger_panic("poweroff")
+    else:
+        show_help()
+
+def cmd_update(args):
+    if args and args[0] == "check":
+        print("[*] Checking for PhantomNode OS updates...")
+        res = system_mgr.check_for_updates()
+        if not res.get("success"):
+            print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
+            return
+        if res.get("update_available"):
+            print(f"\033[33m[*] Update available!\033[0m ({res.get('commits_behind')} commit(s) behind)")
+            print(f"    Current commit: {res.get('current_commit')} | Remote: {res.get('remote_commit')}")
+            print("\n  Changelog:")
+            for c in res.get("changelog", []):
+                print(f"    - {c['hash']}: {c['subject']} ({c['time']})")
+            print("\n  Run 'phantom update' to apply.")
+        else:
+            print(f"\033[32m[+] PhantomNode OS is up to date (commit {res.get('current_commit')}).\033[0m")
+    else:
+        print("[*] Checking for PhantomNode OS updates...")
+        check = system_mgr.check_for_updates()
+        if not check.get("success"):
+            print(f"\033[31m[!] Error: {check.get('error')}\033[0m")
+            return
+        if not check.get("update_available"):
+            print(f"\033[32m[+] System is already up to date ({check.get('current_commit')}).\033[0m")
+            return
+        print(f"[*] Applying update ({check.get('commits_behind')} new commit(s))...")
+        res = system_mgr.apply_update()
+        if res.get("success"):
+            print("\033[32m[+] Successfully updated PhantomNode OS!\033[0m")
+            print("[*] System services are restarting.")
+        else:
+            print(f"\033[31m[!] Update failed: {res.get('error')}\033[0m")
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
+        show_help()
+        return
+
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+
+    if cmd == "status":
+        cmd_status()
+    elif cmd == "app":
+        cmd_app(args)
+    elif cmd == "onion":
+        cmd_onion()
+    elif cmd == "opsec":
+        cmd_opsec(args)
+    elif cmd == "update":
+        cmd_update(args)
+    else:
+        show_help()
+
+if __name__ == "__main__":
+    main()

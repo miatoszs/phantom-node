@@ -1,0 +1,11 @@
+{
+  "id": "forgejo",
+  "name": "Forgejo Git Server",
+  "category": "Development",
+  "description": "Self-hosted software forge (Gitea community fork). Host private repositories, manage code reviews, and automate CI/CD on your own terms.",
+  "opsec_level": "Level 1",
+  "web_port": 3009,
+  "onion_port": 80,
+  "memory_mb": 512,
+  "icon": "forgejo"
+}

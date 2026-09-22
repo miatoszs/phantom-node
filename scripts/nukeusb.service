@@ -1,0 +1,12 @@
+[Unit]
+Description=PhantomNode USB Dead Man's Switch
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/phantom-node/scripts/nukeusb.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+services:
+  invidious-db:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    volumes:
+      - invidious_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=invidious
+      - POSTGRES_USER=kemal
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    security_opt:
+      - no-new-privileges:true
+
+  invidious:
+    image: quay.io/invidious/invidious:latest
+    restart: unless-stopped
+    depends_on:
+      - invidious-db
+    ports:
+      - "127.0.0.1:3002:3000"
+    environment:
+      INVIDIOUS_CONFIG: |
+        db:
+          dbname: invidious
+          user: kemal
+          password: ${DB_PASSWORD}
+          host: invidious-db
+          port: 5432
+        check_tables: true
+        statistics_enabled: false
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  invidious_db:

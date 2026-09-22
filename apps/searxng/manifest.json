@@ -1,0 +1,11 @@
+{
+  "id": "searxng",
+  "name": "SearXNG",
+  "category": "Private Search",
+  "description": "Privacy-respecting, metasearch engine combining results from over 70 search services without tracking user queries, IPs, or search profiling.",
+  "opsec_level": "Level 1",
+  "web_port": 8888,
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "searxng"
+}

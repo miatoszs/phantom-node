@@ -1,0 +1,10 @@
+[Unit]
+Description=Delay PhantomNode USB Dead Man's Switch on boot
+
+[Timer]
+# Wait 3 minutes after boot before arming, giving the user time to plug setup peripherals
+OnBootSec=3min
+Unit=nukeusb.service
+
+[Install]
+WantedBy=timers.target

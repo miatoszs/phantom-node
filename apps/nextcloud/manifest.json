@@ -1,0 +1,11 @@
+{
+  "id": "nextcloud",
+  "name": "Nextcloud Hub",
+  "category": "Cloud & Storage",
+  "description": "Sovereign cloud storage, calendar, contacts, and document collaboration. Self-hosted alternative to Google Drive & Microsoft 365 behind dedicated Tor isolation.",
+  "opsec_level": "Level 2",
+  "web_port": 9639,
+  "onion_port": 80,
+  "memory_mb": 1024,
+  "icon": "nextcloud"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "pihole-unbound",
+  "name": "Pi-hole + Recursive Unbound",
+  "category": "Network & DNS",
+  "description": "Network-wide tracking & ad blocker paired with recursive DNS root resolver. Eliminates ISP DNS snooping and leak vectors.",
+  "opsec_level": "Level 1",
+  "web_port": 8053,
+  "onion_port": 80,
+  "memory_mb": 384,
+  "icon": "pi-hole"
+}

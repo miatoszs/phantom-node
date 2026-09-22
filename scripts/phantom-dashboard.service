@@ -1,0 +1,17 @@
+[Unit]
+Description=PhantomNode OS Web Dashboard & App Engine
+After=network.target docker.service tor.service
+Wants=docker.service tor.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/phantom-node
+ExecStart=/opt/phantom-node/venv/bin/python3 -m uvicorn dashboard.app:app --host 0.0.0.0 --port 7426
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

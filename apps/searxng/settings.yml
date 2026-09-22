@@ -1,0 +1,16 @@
+use_default_settings: true
+general:
+  debug: false
+  instance_name: "PhantomNode Search"
+search:
+  safe_search: 0
+  autocomplete: "duckduckgo"
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "ultrasecretkeyforsearxng"
+  limiter: false
+  image_proxy: true
+ui:
+  theme_args:
+    simple_style: "dark"

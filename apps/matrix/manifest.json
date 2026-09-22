@@ -1,0 +1,11 @@
+{
+  "id": "matrix",
+  "name": "Matrix Synapse",
+  "category": "Encrypted Comms",
+  "description": "Federated, end-to-end encrypted communications server compatible with Element, FluffyChat, and all standard Matrix clients.",
+  "opsec_level": "Level 2",
+  "web_port": 8008,
+  "onion_port": 80,
+  "memory_mb": 1024,
+  "icon": "matrix"
+}

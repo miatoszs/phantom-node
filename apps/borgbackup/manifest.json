@@ -1,0 +1,11 @@
+{
+  "id": "borgbackup",
+  "name": "BorgBackup Server",
+  "category": "Backup & Recovery",
+  "description": "Deduplicating, authenticated, and encrypted remote backup target. Cryptographically protects snapshots from ransomware and tampering.",
+  "opsec_level": "Level 2",
+  "web_port": 2223,
+  "onion_port": 22,
+  "memory_mb": 256,
+  "icon": "borg"
+}

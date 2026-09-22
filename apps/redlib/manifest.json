@@ -1,0 +1,11 @@
+{
+  "id": "redlib",
+  "name": "Redlib",
+  "category": "Private Social",
+  "description": "Private Reddit frontend (fork of Libreddit). Clean, ad-free interface with zero tracking cookies and fast page rendering.",
+  "opsec_level": "Level 1",
+  "web_port": 8082,
+  "onion_port": 80,
+  "memory_mb": 128,
+  "icon": "redlib"
+}

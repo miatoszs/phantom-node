@@ -1,0 +1,22 @@
+services:
+  syncthing:
+    image: syncthing/syncthing:latest
+    container_name: syncthing
+    restart: unless-stopped
+    hostname: phantom-syncthing
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - syncthing_data:/var/syncthing
+    ports:
+      # Local GUI loopback
+      - "127.0.0.1:8384:8384"
+      # Sync protocol
+      - "22000:22000/tcp"
+      - "22000:22000/udp"
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  syncthing_data:

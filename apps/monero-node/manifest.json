@@ -1,0 +1,11 @@
+{
+  "id": "monero-node",
+  "name": "Monero Full Node",
+  "category": "Financial Privacy",
+  "description": "Full validating node for Monero (XMR). Broadcast anonymous, untraceable transactions and verify blockchain state through your own trusted daemon.",
+  "opsec_level": "Level 3",
+  "web_port": 18081,
+  "onion_port": 18081,
+  "memory_mb": 2048,
+  "icon": "monero"
+}

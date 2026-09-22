@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhantomNode OS – Sovereign Privacy Server</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <header class="navbar">
+        <a href="/" class="brand">
+            <div class="brand-icon-box">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title">
+                    PhantomNode <span class="os-tag">OS</span>
+                </div>
+                <div class="brand-subtitle">The Sovereign Privacy Server</div>
+            </div>
+        </a>
+
+        <div class="nav-badges">
+            <div id="tor-badge" class="badge badge-green">
+                <span id="tor-status-dot" class="status-dot active pulse"></span>
+                <span id="tor-status-text">Tor v3 Active</span>
+            </div>
+
+            <div id="opsec-badge" class="badge badge-interactive" onclick="showOpsecModal()">
+                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span id="opsec-status-text">OPSEC Shield</span>
+            </div>
+
+            <div id="update-badge" class="badge badge-interactive" onclick="showUpdateModal()" title="System Updates">
+                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span id="update-badge-text">v1.1.0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="main-container">
+
+        <!-- Real-Time Hardware & Network Telemetry -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-header-title">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                            <rect x="9" y="9" width="6" height="6"></rect>
+                            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"></path>
+                        </svg>
+                        <span>CPU Usage</span>
+                    </div>
+                    <span id="cpu-val" class="stat-value">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="cpu-bar" class="progress-bar-fill bar-cyan" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-header-title">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M6 8V5M10 8V5M14 8V5M18 8V5M2 8h20v8H2z"></path>
+                        </svg>
+                        <span>Memory (RAM)</span>
+                    </div>
+                    <span id="ram-val" class="stat-value">0 / 0 GB</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="ram-bar" class="progress-bar-fill bar-purple" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-header-title">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="12" x2="2" y2="12"></line>
+                            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+                            <line x1="6" y1="16" x2="6.01" y2="16"></line>
+                            <line x1="10" y1="16" x2="10.01" y2="16"></line>
+                        </svg>
+                        <span>Storage (Disk)</span>
+                    </div>
+                    <span id="disk-val" class="stat-value">0 / 0 GB</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="disk-bar" class="progress-bar-fill bar-green" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-header-title">
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>Uptime</span>
+                    </div>
+                    <span id="uptime-val" class="stat-value">0h 0m</span>
+                </div>
+                <div style="font-size: 11px; color: var(--accent-cyan); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                    Zero-WAN Policy Active
+                </div>
+            </div>
+        </section>
+
+        <!-- View Controls & Tabs -->
+        <section class="view-bar">
+            <div class="tabs-group">
+                <button class="tab-btn active" data-tab="installed">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span>Installed Apps</span>
+                    <span id="installed-counter" class="tab-counter">0</span>
+                </button>
+                <button class="tab-btn" data-tab="catalog">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="21" r="1"></circle>
+                        <circle cx="20" cy="21" r="1"></circle>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                    </svg>
+                    <span>Privacy App Store</span>
+                    <span id="catalog-counter" class="tab-counter">0</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Dynamic Applications Grid -->
+        <section id="apps-grid" class="app-grid"></section>
+
+    </main>
+
+    <!-- Tor Onion & QR Code Modal -->
+    <div id="onion-modal" class="modal-overlay" onclick="handleBackdropClick(event, 'onion-modal')">
+        <div class="modal-box">
+            <button class="modal-close-btn" onclick="closeOnionModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-header-row">
+                <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                    <path d="M2 12h20"></path>
+                </svg>
+                <div class="modal-title" id="onion-title">Tor v3 Onion Access</div>
+            </div>
+            <p class="modal-subtitle">
+                Zero-Port-Forwarding architecture. Accessible globally via Tor Browser with end-to-end onion encryption without exposing public IP addresses.
+            </p>
+
+            <div class="qr-container">
+                <div class="qr-canvas-wrap">
+                    <img id="onion-qr" src="" alt="Tor Onion QR" width="180" height="180" style="display: block;">
+                </div>
+                <div class="onion-box">
+                    <span id="onion-address">resolving...</span>
+                    <button class="btn btn-secondary" onclick="copyOnion()">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>Copy</span>
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+                <a id="onion-link" href="#" target="_blank" class="btn btn-primary">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                    <span>Launch in Tor Browser</span>
+                </a>
+                <button class="btn btn-secondary" onclick="closeOnionModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container Logs Modal -->
+    <div id="logs-modal" class="modal-overlay" onclick="handleBackdropClick(event, 'logs-modal')">
+        <div class="modal-box" style="max-width: 820px;">
+            <button class="modal-close-btn" onclick="closeLogsModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-header-row">
+                <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="4 17 10 11 4 5"></polyline>
+                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                </svg>
+                <div class="modal-title" id="logs-title">Application Container Logs</div>
+            </div>
+            <pre id="logs-content" style="background: #06090e; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; font-size: 12px; max-height: 420px; overflow-y: auto; color: #94a3b8; font-family: ui-monospace, SFMono-Regular, monospace; white-space: pre-wrap; word-break: break-all; margin-top: 14px;"></pre>
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeLogsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OPSEC Shield & Hardware Anti-Forensics Modal -->
+    <div id="opsec-modal" class="modal-overlay" onclick="handleBackdropClick(event, 'opsec-modal')">
+        <div class="modal-box">
+            <button class="modal-close-btn" onclick="closeOpsecModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-header-row">
+                <svg class="modal-header-icon" style="color: var(--accent-purple);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <div class="modal-title">OPSEC & Anti-Forensics Center</div>
+            </div>
+            <p class="modal-subtitle">
+                Hardware tripwires, physical intrusion detection, and immediate memory purge mechanisms.
+            </p>
+
+            <!-- USB Dead Man's Switch -->
+            <div class="opsec-section">
+                <div class="opsec-header">
+                    <div class="opsec-title">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="10" cy="14" r="2"></circle>
+                            <path d="m7 7 3 3M10 4v16M14 4h4v4h-4zM10 10l4 4M14 14v4"></path>
+                        </svg>
+                        <span>USB Dead Man's Switch (nukeusb)</span>
+                    </div>
+                    <span id="usb-status-tag" class="tag-badge tag-ram">Inactive</span>
+                </div>
+                <p class="opsec-desc">
+                    Triggers instant emergency RAM cache purge and hard shutdown if any unauthorized USB device (such as forensic cloning drives or mouse jigglers) is attached or removed.
+                </p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="toggleUsb(true)">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span>Arm USB Shield</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleUsb(false)">Disarm</button>
+                </div>
+            </div>
+
+            <!-- Emergency Panic Trigger -->
+            <div class="opsec-section opsec-section-danger">
+                <div class="opsec-header">
+                    <div class="opsec-title" style="color: var(--accent-red);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span>Emergency Panic Purge</span>
+                    </div>
+                </div>
+                <p class="opsec-desc">
+                    Forces memory cache drop (/proc/sys/vm/drop_caches) and initiates immediate hard machine shutdown to resist live RAM forensic capture.
+                </p>
+                <button class="btn btn-danger" onclick="triggerPanic()">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                    <span>TRIGGER EMERGENCY SHUTDOWN</span>
+                </button>
+            </div>
+
+            <!-- OPSEC System Audit -->
+            <div class="opsec-section">
+                <div class="opsec-header">
+                    <div class="opsec-title">
+                        <span>Kernel & Network Hardening Audit</span>
+                    </div>
+                </div>
+                <table class="opsec-audit-table">
+                    <tr>
+                        <td>TCP Timestamps (Anti-Uptime Fingerprinting)</td>
+                        <td id="audit-timestamps" style="color: var(--accent-green);">Disabled (Hardened)</td>
+                    </tr>
+                    <tr>
+                        <td>UFW Firewall Policy</td>
+                        <td id="audit-ufw" style="color: var(--accent-green);">Zero-WAN Strict Isolation</td>
+                    </tr>
+                    <tr>
+                        <td>Tor Hidden Service v3 Cryptography</td>
+                        <td style="color: var(--accent-green);">ed25519 Elliptic Curve</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeOpsecModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Update Modal -->
+    <div id="update-modal" class="modal-overlay" onclick="handleBackdropClick(event, 'update-modal')">
+        <div class="modal-box">
+            <button class="modal-close-btn" onclick="closeUpdateModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-header-row">
+                <svg class="modal-header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <div class="modal-title">System Software Update</div>
+            </div>
+            <p class="modal-subtitle">
+                1-Click OTA updates directly from the official GitHub repository. Upgrades core engines, UI components, and application manifests seamlessly.
+            </p>
+
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">INSTALLED VERSION</span>
+                    <span id="update-current-ver" class="tag-badge tag-ram" style="font-family: monospace;">v1.1.0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">UPSTREAM REPO</span>
+                    <span id="update-remote-ver" class="tag-badge tag-opsec-2" style="font-family: monospace;">Checking...</span>
+                </div>
+            </div>
+
+            <div id="update-changelog-wrap" style="display: none; margin-bottom: 18px;">
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">Available Updates & Commits:</div>
+                <div id="update-changelog" style="background: #06090e; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-size: 12px; font-family: monospace; max-height: 180px; overflow-y: auto; color: #94a3b8;"></div>
+            </div>
+
+            <div id="update-status-msg" style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; text-align: center;"></div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn btn-secondary" onclick="checkUpdates(true)">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    <span>Check for Updates</span>
+                </button>
+                <button id="btn-apply-update" class="btn btn-primary" onclick="applySystemUpdate()" style="display: none;">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Update System Now</span>
+                </button>
+                <button class="btn btn-secondary" onclick="closeUpdateModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

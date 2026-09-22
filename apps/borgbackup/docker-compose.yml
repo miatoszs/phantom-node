@@ -1,0 +1,15 @@
+services:
+  borgserver:
+    image: b3vis/borgserver:latest
+    container_name: borgserver
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:2223:22"
+    volumes:
+      - borg_data:/backups
+      - ./ssh_keys:/sshkeys
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  borg_data:

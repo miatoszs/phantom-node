@@ -1,0 +1,17 @@
+services:
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: matrix_synapse
+    restart: unless-stopped
+    environment:
+      - SYNAPSE_SERVER_NAME=${SYNAPSE_SERVER_NAME:-phantom.local}
+      - SYNAPSE_REPORT_STATS=no
+    volumes:
+      - synapse_data:/data
+    ports:
+      - "127.0.0.1:8008:8008"
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  synapse_data:

@@ -1,0 +1,11 @@
+{
+  "id": "simplex",
+  "name": "SimpleX Chat Server",
+  "category": "Encrypted Comms",
+  "description": "Private messaging server without user identifiers, phone numbers, or metadata graphs. Relays SMP and XFTP end-to-end encrypted protocols.",
+  "opsec_level": "Level 3",
+  "web_port": 5223,
+  "onion_port": 5223,
+  "memory_mb": 256,
+  "icon": "simplex-chat"
+}

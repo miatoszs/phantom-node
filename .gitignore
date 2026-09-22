@@ -1,0 +1,21 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python cache & compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# System & Editor
+.DS_Store
+.idea/
+.vscode/
+
+# Runtime data & secrets
+*.log
+.env
+data/
+installed_apps/

@@ -1,0 +1,11 @@
+{
+  "id": "ollama-webui",
+  "name": "Open WebUI & Ollama",
+  "category": "Private AI",
+  "description": "ChatGPT-style web interface connected to local neural language models. Runs 100% offline without telemetry or API data harvesting.",
+  "opsec_level": "Level 2",
+  "web_port": 3000,
+  "onion_port": 80,
+  "memory_mb": 2048,
+  "icon": "open-webui"
+}

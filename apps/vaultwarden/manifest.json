@@ -1,0 +1,11 @@
+{
+  "id": "vaultwarden",
+  "name": "Vaultwarden",
+  "category": "Passwords & Auth",
+  "description": "Lightweight Bitwarden-compatible password manager written in Rust. Zero-knowledge, client-side encrypted credentials with full browser & mobile extension support.",
+  "opsec_level": "Level 1",
+  "web_port": 8081,
+  "onion_port": 80,
+  "memory_mb": 128,
+  "icon": "vaultwarden"
+}

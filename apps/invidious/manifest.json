@@ -1,0 +1,11 @@
+{
+  "id": "invidious",
+  "name": "Invidious",
+  "category": "Media & Streaming",
+  "description": "Alternative, lightweight YouTube frontend. Stream videos and listen to music without Google tracking, JavaScript bloat, or targeted ads.",
+  "opsec_level": "Level 1",
+  "web_port": 3002,
+  "onion_port": 80,
+  "memory_mb": 512,
+  "icon": "invidious"
+}

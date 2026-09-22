@@ -1,0 +1,11 @@
+{
+  "id": "syncthing",
+  "name": "Syncthing",
+  "category": "Continuous Sync",
+  "description": "Decentralized, peer-to-peer file synchronization system. Encrypted in transit without third-party cloud relays or central servers.",
+  "opsec_level": "Level 1",
+  "web_port": 8384,
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "syncthing"
+}

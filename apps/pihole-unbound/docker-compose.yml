@@ -1,0 +1,49 @@
+services:
+  unbound:
+    image: mvance/unbound:latest
+    container_name: phantom_unbound
+    restart: unless-stopped
+    volumes:
+      - ./unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
+    networks:
+      pihole_net:
+        ipv4_address: 172.29.0.2
+    security_opt:
+      - no-new-privileges:true
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: phantom_pihole
+    restart: unless-stopped
+    depends_on:
+      - unbound
+    environment:
+      - TZ=UTC
+      - WEBPASSWORD=${PIHOLE_PASSWORD}
+      - PIHOLE_DNS_=172.29.0.2#53
+      - DNSSEC=true
+    volumes:
+      - pihole_config:/etc/pihole
+      - pihole_dnsmasq:/etc/dnsmasq.d
+    ports:
+      # DNS port exposed to local network
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Web interface loopback
+      - "127.0.0.1:8053:80"
+    networks:
+      pihole_net:
+        ipv4_address: 172.29.0.3
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  pihole_config:
+  pihole_dnsmasq:
+
+networks:
+  pihole_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/24

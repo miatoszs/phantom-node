@@ -1,0 +1,35 @@
+services:
+  simplex-smp-server:
+    image: simplexchat/smp-server:latest
+    container_name: simplex-smp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5223:5223"
+    volumes:
+      - ./smp/config:/etc/opt/simplex:Z
+      - ./smp/logs:/var/opt/simplex:Z
+    environment:
+      - ADDR=${SIMPLEX_ADDR:-localhost}
+      - PASS=${SIMPLEX_PASSWORD}
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  simplex-xftp-server:
+    image: simplexchat/xftp-server:latest
+    container_name: simplex-xftp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5233:5233"
+    volumes:
+      - ./xftp/config:/etc/opt/simplex-xftp:Z
+      - ./xftp/logs:/var/opt/simplex-xftp:Z
+      - ./xftp/files:/srv/xftp
+    environment:
+      - ADDR=${SIMPLEX_ADDR:-localhost}
+      - QUOTA=50gb
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
