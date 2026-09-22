@@ -5,7 +5,17 @@
   "description": "Private messaging server without user identifiers, phone numbers, or metadata graphs. Relays SMP and XFTP end-to-end encrypted protocols.",
   "opsec_level": "Level 3",
   "web_port": 5223,
+  "web_port_label": "SMP Message Relay Port",
   "onion_port": 5223,
   "memory_mb": 256,
-  "icon": "simplex-chat"
+  "icon": "simplex-chat",
+  "extra_ports": [
+    {
+      "key": "xftp_port",
+      "label": "XFTP File Transfer Port",
+      "default": 5233,
+      "protocol": "tcp",
+      "description": "Port used for encrypted media and file transfers"
+    }
+  ]
 }

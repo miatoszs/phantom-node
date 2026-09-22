@@ -201,7 +201,23 @@ class DockerManager:
                                     if "onion_port" in inst_data:
                                         manifest["onion_port"] = inst_data["onion_port"]
                                     if "extra_ports" in inst_data:
-                                        manifest["extra_ports"] = inst_data["extra_ports"]
+                                        inst_ep = inst_data["extra_ports"]
+                                        if isinstance(inst_ep, dict):
+                                            for ep in manifest.get("extra_ports", []):
+                                                k = ep.get("key")
+                                                if k in inst_ep:
+                                                    ep["default"] = inst_ep[k]
+                                                    ep["port"] = inst_ep[k]
+                                        elif isinstance(inst_ep, list):
+                                            for item in inst_ep:
+                                                if isinstance(item, dict) and "key" in item:
+                                                    val = item.get("port", item.get("default"))
+                                                    for ep in manifest.get("extra_ports", []):
+                                                        if ep.get("key") == item["key"]:
+                                                            ep["default"] = val
+                                                            ep["port"] = val
+                                        else:
+                                            manifest["extra_ports"] = inst_data["extra_ports"]
                             except Exception:
                                 pass
                         manifest["suggested_web_port"] = manifest.get("web_port")

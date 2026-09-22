@@ -16,6 +16,7 @@ const ICONS = {
     deploy: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
     settings: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
     refresh: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`,
+    info: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
     spinner: `<svg class="btn-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle></svg>`
 };
 
@@ -164,6 +165,37 @@ function renderApps() {
         if (app.opsec_level === 'Level 2') opsecClass = 'tag-opsec-2';
         if (app.opsec_level === 'Level 3') opsecClass = 'tag-opsec-3';
 
+        let portsPreviewHtml = '';
+        if (app.is_installed) {
+            const chips = [];
+            if (app.web_port) {
+                const label = app.web_port_label || 'Web UI';
+                chips.push(`<span class="port-chip primary" title="${label}: ${app.web_port}">:${app.web_port} <span style="opacity:0.75;font-size:9px;">(${label})</span></span>`);
+            }
+            if (app.extra_ports && Array.isArray(app.extra_ports)) {
+                app.extra_ports.forEach(ep => {
+                    const portVal = ep.port || ep.default;
+                    if (portVal) {
+                        const proto = (ep.protocol || 'tcp').toUpperCase();
+                        chips.push(`<span class="port-chip" title="${ep.label || ep.key}: ${portVal} (${proto})">:${portVal} <span style="opacity:0.75;font-size:9px;">(${ep.label || ep.key})</span></span>`);
+                    }
+                });
+            }
+            if (chips.length > 0) {
+                portsPreviewHtml = `
+                    <div class="app-ports-preview" onclick="showAppInfoModal('${app.id}')" title="Click to view detailed network endpoints & client configuration">
+                        <div class="ports-preview-header">
+                            <span>Network Ports</span>
+                            <span style="font-size:10px;color:var(--accent-cyan);text-transform:none;font-weight:600;">Details &rarr;</span>
+                        </div>
+                        <div class="ports-chips-wrap">
+                            ${chips.join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         const actionButtons = app.is_installed ? `
             <button class="btn btn-primary" onclick="openApp('${app.id}', ${app.web_port}, '${app.onion || ''}')">
                 ${ICONS.open}
@@ -174,6 +206,10 @@ function renderApps() {
                 ${ICONS.onion}
                 <span>Tor v3</span>
             </button>` : ''}
+            <button class="btn btn-secondary" onclick="showAppInfoModal('${app.id}')" title="App Information & Network Ports">
+                ${ICONS.info}
+                <span>Info</span>
+            </button>
             <button class="btn btn-secondary" onclick="toggleAppState('${app.id}', ${isRunning})">
                 ${isRunning ? ICONS.pause : ICONS.play}
                 <span>${isRunning ? 'Stop' : 'Start'}</span>
@@ -222,6 +258,7 @@ function renderApps() {
                     <span class="tag-badge tag-ram">${app.memory_mb} MB RAM</span>
                 </div>
                 <p class="app-desc">${app.description}</p>
+                ${portsPreviewHtml}
             </div>
             <div class="app-actions">
                 ${actionButtons}
@@ -807,3 +844,275 @@ async function submitAdvancedInstall(e) {
         }
     }
 }
+
+// ---------------------------------------------------------
+// App Information & Network Port Mapping Modal
+// ---------------------------------------------------------
+let currentInfoApp = null;
+
+function showAppInfoModal(appId) {
+    const app = appsData.find(a => a.id === appId);
+    if (!app) return;
+    currentInfoApp = app;
+
+    const host = window.location.hostname || '127.0.0.1';
+
+    // Header & Icon
+    const iconWrap = document.getElementById('info-modal-icon-wrap');
+    if (iconWrap) {
+        iconWrap.innerHTML = getAppIconHtml(app.icon, app.name);
+    }
+    const titleEl = document.getElementById('info-modal-title');
+    if (titleEl) titleEl.innerText = app.name;
+    const subEl = document.getElementById('info-modal-subtitle');
+    if (subEl) subEl.innerText = `${app.category} • Ports & Endpoints`;
+
+    // Status Badges
+    const statusEl = document.getElementById('info-status-badge');
+    if (statusEl) {
+        statusEl.className = `status-badge ${app.is_running ? 'running' : 'stopped'}`;
+        statusEl.innerHTML = `<span class="status-dot ${app.is_running ? 'active pulse' : 'inactive'}" style="width:6px;height:6px;"></span> ${app.is_running ? 'Running' : 'Stopped'}`;
+    }
+
+    let opsecClass = 'tag-opsec-1';
+    if (app.opsec_level === 'Level 2') opsecClass = 'tag-opsec-2';
+    if (app.opsec_level === 'Level 3') opsecClass = 'tag-opsec-3';
+    const opsecEl = document.getElementById('info-opsec-badge');
+    if (opsecEl) {
+        opsecEl.className = `tag-badge ${opsecClass}`;
+        opsecEl.innerText = app.opsec_level;
+    }
+
+    const ramEl = document.getElementById('info-ram-badge');
+    if (ramEl) ramEl.innerText = `${app.memory_mb} MB RAM`;
+
+    const catEl = document.getElementById('info-cat-badge');
+    if (catEl) catEl.innerText = app.category;
+
+    // Description
+    const descEl = document.getElementById('info-modal-desc');
+    if (descEl) descEl.innerText = app.description;
+
+    // Host IP label
+    const hostIpLabel = document.getElementById('info-host-ip-label');
+    if (hostIpLabel) hostIpLabel.innerText = `Host IP: ${host}`;
+
+    // Ports Table
+    const portsTable = document.getElementById('info-ports-table');
+    if (portsTable) {
+        let rowsHtml = '';
+
+        // Primary Web Port
+        if (app.web_port) {
+            const webLabel = app.web_port_label || 'Web UI / HTTP Console';
+            const endpoint = `http://${host}:${app.web_port}`;
+            rowsHtml += `
+                <div class="info-port-row">
+                    <div class="info-port-badge">${app.web_port} / TCP</div>
+                    <div class="info-port-details">
+                        <div class="info-port-name">${webLabel}</div>
+                        <div class="info-port-desc">Browser web management interface & dashboard</div>
+                    </div>
+                    <div class="info-port-endpoint">
+                        <code>${host}:${app.web_port}</code>
+                        <button class="btn btn-secondary" onclick="copyEndpoint('${endpoint}')" title="Copy URL" style="padding: 3px 8px; font-size: 11px;">Copy</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Extra Ports
+        if (app.extra_ports && Array.isArray(app.extra_ports)) {
+            app.extra_ports.forEach(ep => {
+                const portVal = ep.port || ep.default;
+                if (!portVal) return;
+                const proto = (ep.protocol || 'tcp').toUpperCase();
+                const epLabel = ep.label || ep.key;
+                const epDesc = ep.description || 'Application service port';
+                const endpoint = `${host}:${portVal}`;
+                rowsHtml += `
+                    <div class="info-port-row">
+                        <div class="info-port-badge" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.15);color:var(--text-main);">${portVal} / ${proto}</div>
+                        <div class="info-port-details">
+                            <div class="info-port-name">${epLabel}</div>
+                            <div class="info-port-desc">${epDesc}</div>
+                        </div>
+                        <div class="info-port-endpoint">
+                            <code>${endpoint}</code>
+                            <button class="btn btn-secondary" onclick="copyEndpoint('${endpoint}')" title="Copy Endpoint" style="padding: 3px 8px; font-size: 11px;">Copy</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        portsTable.innerHTML = rowsHtml || '<div style="color:var(--text-muted);font-size:12px;padding:8px;">No exposed host network ports.</div>';
+    }
+
+    // Tor Onion Section
+    const onionSection = document.getElementById('info-onion-section');
+    const onionAddr = document.getElementById('info-onion-address');
+    if (app.onion) {
+        if (onionSection) onionSection.style.display = 'block';
+        if (onionAddr) onionAddr.innerHTML = `<a href="http://${app.onion}" target="_blank" style="color:#c084fc;text-decoration:none;">http://${app.onion}</a>`;
+    } else {
+        if (onionSection) onionSection.style.display = 'none';
+    }
+
+    // Client Connection Guide
+    const guideSection = document.getElementById('info-guide-section');
+    const guideContent = document.getElementById('info-guide-content');
+    const guideHtml = getClientGuide(app.id, host, app);
+    if (guideSection && guideContent && guideHtml) {
+        guideContent.innerHTML = guideHtml;
+        guideSection.style.display = 'block';
+    } else if (guideSection) {
+        guideSection.style.display = 'none';
+    }
+
+    // Open Web button
+    const openBtn = document.getElementById('btn-info-open-web');
+    if (openBtn) {
+        if (app.web_port && app.is_running) {
+            openBtn.style.display = 'inline-flex';
+            openBtn.onclick = () => {
+                closeAppInfoModal();
+                openApp(app.id, app.web_port, app.onion);
+            };
+        } else {
+            openBtn.style.display = 'none';
+        }
+    }
+
+    const modal = document.getElementById('app-info-modal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeAppInfoModal() {
+    const modal = document.getElementById('app-info-modal');
+    if (modal) modal.classList.remove('active');
+    currentInfoApp = null;
+}
+
+function copyInfoOnion() {
+    if (currentInfoApp && currentInfoApp.onion) {
+        const url = `http://${currentInfoApp.onion}`;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url);
+            showToast('Tor v3 Onion address copied!', 'info');
+        } else {
+            prompt('Copy Tor Onion Address:', url);
+        }
+    }
+}
+
+function copyEndpoint(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        showToast(`Copied to clipboard: ${text}`, 'info');
+    } else {
+        prompt('Copy Endpoint:', text);
+    }
+}
+
+function getClientGuide(appId, host, app) {
+    const webPort = app.web_port;
+    const onion = app.onion;
+
+    const getPort = (key, fallback) => {
+        if (app.extra_ports && Array.isArray(app.extra_ports)) {
+            const found = app.extra_ports.find(p => p.key === key);
+            if (found) return found.port || found.default || fallback;
+        }
+        return fallback;
+    };
+
+    switch (appId) {
+        case 'monero-node': {
+            const rpcPort = getPort('rpc_port', 18081);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Feather Wallet / Monero GUI Connection:</strong></div>
+                <div style="margin-bottom: 4px;">• In your wallet network settings, choose <em>Custom Node</em>.</div>
+                <div style="margin-bottom: 4px;">• Node Address: <code style="color:var(--accent-cyan);">${host}</code> &nbsp; Port: <code style="color:var(--accent-cyan);">${rpcPort}</code></div>
+                ${onion ? `<div>• Or via Tor Hidden Service: <code style="color:#c084fc;">${onion}</code> (Port 80)</div>` : ''}
+                <div style="margin-top: 6px; font-size: 11px; color: var(--text-dim);">The web dashboard on port ${webPort} displays real-time sync progress, hashrate, and block height.</div>
+            `;
+        }
+        case 'i2pd': {
+            const httpProxy = getPort('http_proxy_port', 4444);
+            const socksProxy = getPort('socks_proxy_port', 4447);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Browser & Client Proxy Configuration:</strong></div>
+                <div style="margin-bottom: 4px;">• HTTP Proxy (for .i2p eepsites): <code style="color:var(--accent-cyan);">${host}:${httpProxy}</code></div>
+                <div style="margin-bottom: 4px;">• SOCKS5 Proxy: <code style="color:var(--accent-cyan);">${host}:${socksProxy}</code></div>
+                <div>• Web Router Console: <a href="http://${host}:${webPort}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">http://${host}:${webPort}</a></div>
+            `;
+        }
+        case 'wg-easy': {
+            const vpnPort = getPort('vpn_port', 51820);
+            return `
+                <div style="margin-bottom: 6px;"><strong>WireGuard Client Setup:</strong></div>
+                <div style="margin-bottom: 4px;">1. Open the Admin Console at <a href="http://${host}:${webPort}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">http://${host}:${webPort}</a></div>
+                <div style="margin-bottom: 4px;">2. Click <em>+ New Client</em>, then download the profile or scan the QR code.</div>
+                <div>• WireGuard tunnel connects to UDP port <code style="color:var(--accent-cyan);">${vpnPort}</code>.</div>
+            `;
+        }
+        case 'adguard-home':
+        case 'pihole-unbound': {
+            const dnsPort = getPort('dns_port', appId === 'adguard-home' ? 5353 : 53);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Network DNS Configuration:</strong></div>
+                <div style="margin-bottom: 4px;">• Set your router Primary DNS or device DNS to: <code style="color:var(--accent-cyan);">${host}</code></div>
+                <div style="margin-bottom: 4px;">• DNS Port: <code style="color:var(--accent-cyan);">${dnsPort} (UDP)</code></div>
+                <div>• Web Admin Dashboard: <a href="http://${host}:${webPort}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">http://${host}:${webPort}</a></div>
+            `;
+        }
+        case 'simplex': {
+            const xftpPort = getPort('xftp_port', 5233);
+            return `
+                <div style="margin-bottom: 6px;"><strong>SimpleX Chat Configuration:</strong></div>
+                <div style="margin-bottom: 4px;">• SMP Server Web Port: <code style="color:var(--accent-cyan);">${webPort}</code></div>
+                <div style="margin-bottom: 4px;">• XFTP File Transfer Port: <code style="color:var(--accent-cyan);">${xftpPort}</code> (TCP)</div>
+                ${onion ? `<div>• Tor v3 Onion address available for anonymous E2EE routing.</div>` : ''}
+            `;
+        }
+        case 'vaultwarden': {
+            return `
+                <div style="margin-bottom: 6px;"><strong>Bitwarden Client Setup:</strong></div>
+                <div style="margin-bottom: 4px;">• In the Bitwarden extension or mobile app, click the Gear icon (Settings).</div>
+                <div style="margin-bottom: 4px;">• Under <em>Self-hosted environment</em>, enter Server URL: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>
+                <div><em>Note: Bitwarden browser extension requires HTTPS or localhost for autofill, or connect through Tor onion.</em></div>
+            `;
+        }
+        case 'forgejo': {
+            const sshPort = getPort('ssh_port', 2222);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Git Access:</strong></div>
+                <div style="margin-bottom: 4px;">• Web Interface: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>
+                <div>• SSH Git Clones: <code style="color:var(--accent-cyan);">ssh://git@${host}:${sshPort}/[username]/[repo].git</code></div>
+            `;
+        }
+        case 'syncthing': {
+            const syncPort = getPort('sync_port', 22000);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Syncthing Peer Sync:</strong></div>
+                <div style="margin-bottom: 4px;">• Web GUI: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>
+                <div>• Peer Sync Listen Port: <code style="color:var(--accent-cyan);">${syncPort} (TCP)</code></div>
+            `;
+        }
+        case 'ollama-webui': {
+            const apiPort = getPort('ollama_api_port', 11434);
+            return `
+                <div style="margin-bottom: 6px;"><strong>LLM & API Endpoints:</strong></div>
+                <div style="margin-bottom: 4px;">• Open WebUI Chat Interface: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>
+                <div>• Ollama REST API: <code style="color:var(--accent-cyan);">http://${host}:${apiPort}</code> (OpenAI-compatible)</div>
+            `;
+        }
+        default:
+            return `
+                <div style="margin-bottom: 4px;">• Local Service Endpoint: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>
+                ${onion ? `<div>• Tor v3 Onion Service: <code style="color:#c084fc;">http://${onion}</code></div>` : ''}
+            `;
+    }
+}
+

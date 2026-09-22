@@ -5,7 +5,17 @@
   "description": "Decentralized, peer-to-peer file synchronization system. Encrypted in transit without third-party cloud relays or central servers.",
   "opsec_level": "Level 1",
   "web_port": 8384,
+  "web_port_label": "Syncthing Web GUI Port",
   "onion_port": 80,
   "memory_mb": 256,
-  "icon": "syncthing"
+  "icon": "syncthing",
+  "extra_ports": [
+    {
+      "key": "sync_port",
+      "label": "File Sync Protocol Port",
+      "default": 22000,
+      "protocol": "tcp",
+      "description": "Port used by client devices to synchronize file blocks"
+    }
+  ]
 }

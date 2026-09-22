@@ -438,6 +438,72 @@
         </div>
     </div>
 
+    <!-- App Information & Network Ports Modal -->
+    <div id="app-info-modal" class="modal-overlay" onclick="handleBackdropClick(event, 'app-info-modal')">
+        <div class="modal-box" style="max-width: 580px;">
+            <button class="modal-close-btn" onclick="closeAppInfoModal()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div class="modal-header-row" style="margin-bottom: 4px;">
+                <div id="info-modal-icon-wrap" style="width: 42px; height: 42px; border-radius: 10px; background: rgba(0,255,204,0.08); display: flex; align-items: center; justify-content: center; margin-right: 14px; flex-shrink: 0; padding: 6px;">
+                    <!-- Injected Icon -->
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="modal-title" id="info-modal-title" style="font-size: 18px;">App Information</div>
+                    <div style="font-size: 11px; color: var(--text-dim);" id="info-modal-subtitle">Service endpoints & network ports</div>
+                </div>
+            </div>
+
+            <!-- Status & Meta Pills -->
+            <div style="display: flex; gap: 8px; margin-top: 14px; margin-bottom: 16px; flex-wrap: wrap;">
+                <span id="info-status-badge"></span>
+                <span id="info-opsec-badge" class="tag-badge"></span>
+                <span id="info-ram-badge" class="tag-badge tag-ram"></span>
+                <span id="info-cat-badge" class="tag-badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);"></span>
+            </div>
+
+            <!-- App Description -->
+            <p id="info-modal-desc" style="font-size: 13px; line-height: 1.5; color: var(--text-muted); margin-bottom: 18px;"></p>
+
+            <!-- Network Ports Section -->
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px;">ACTIVE NETWORK PORTS & SERVICES</span>
+                    <span style="font-size: 11px; color: var(--accent-cyan); font-family: monospace;" id="info-host-ip-label">Host: 127.0.0.1</span>
+                </div>
+                <div id="info-ports-table" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Port rows injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Tor Onion Section -->
+            <div id="info-onion-section" style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #c084fc; letter-spacing: 0.5px;">TOR v3 ONION SERVICE</span>
+                    <button class="btn btn-secondary" onclick="copyInfoOnion()" style="padding: 2px 8px; font-size: 11px; height: 24px;">Copy</button>
+                </div>
+                <div id="info-onion-address" style="font-family: monospace; font-size: 12px; color: #e9d5ff; word-break: break-all;"></div>
+            </div>
+
+            <!-- Quick Client Connection Guide -->
+            <div id="info-guide-section" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 18px; display: none;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px;">CLIENT CONNECTION GUIDE</div>
+                <div id="info-guide-content" style="font-size: 12px; color: var(--text-dim); line-height: 1.5;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="closeAppInfoModal()">Close</button>
+                <button type="button" id="btn-info-open-web" class="btn btn-primary">
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    <span>Open Web UI</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notifications Container -->
     <div id="toast-container"></div>
 

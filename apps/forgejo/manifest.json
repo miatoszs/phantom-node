@@ -5,7 +5,17 @@
   "description": "Self-hosted software forge (Gitea community fork). Host private repositories, manage code reviews, and automate CI/CD on your own terms.",
   "opsec_level": "Level 1",
   "web_port": 3009,
+  "web_port_label": "Forgejo Web UI Port",
   "onion_port": 80,
   "memory_mb": 512,
-  "icon": "forgejo"
+  "icon": "forgejo",
+  "extra_ports": [
+    {
+      "key": "ssh_port",
+      "label": "Git SSH Clone Port",
+      "default": 2222,
+      "protocol": "tcp",
+      "description": "Port used for SSH git clone and push operations"
+    }
+  ]
 }

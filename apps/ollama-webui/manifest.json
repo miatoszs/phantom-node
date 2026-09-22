@@ -5,7 +5,17 @@
   "description": "ChatGPT-style web interface connected to local neural language models. Runs 100% offline without telemetry or API data harvesting.",
   "opsec_level": "Level 2",
   "web_port": 3000,
+  "web_port_label": "Open WebUI Port",
   "onion_port": 80,
   "memory_mb": 2048,
-  "icon": "open-webui"
+  "icon": "open-webui",
+  "extra_ports": [
+    {
+      "key": "ollama_api_port",
+      "label": "Ollama LLM API Port",
+      "default": 11434,
+      "protocol": "tcp",
+      "description": "Direct OpenAI-compatible API endpoint for local LLM inferences"
+    }
+  ]
 }
