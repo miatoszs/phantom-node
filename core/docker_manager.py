@@ -116,8 +116,10 @@ class DockerManager:
 
     def fix_installed_port_bindings(self):
         """
-        Scans all installed apps and migrates any localhost-only (127.0.0.1) bindings
-        in docker-compose.yml to all interfaces (0.0.0.0) so they are accessible on LAN.
+        Scans all installed apps and migrates:
+        1. Localhost-only (127.0.0.1) bindings to all interfaces (0.0.0.0) for LAN access.
+        2. Removes obsolete 'version' attribute in docker-compose.yml.
+        3. Configures app-specific LAN/host mismatch fixes (e.g. i2pd --http.strictheaders=false, nextcloud trusted domains).
         """
         if not self.installed_dir.exists():
             return
@@ -128,18 +130,48 @@ class DockerManager:
             if compose_file.exists():
                 try:
                     content = compose_file.read_text(encoding="utf-8")
-                    if "127.0.0.1:" in content:
-                        new_content = re.sub(r'([\'"])127\.0\.0\.1:(\d+:)', r'\g<1>\2', content)
-                        if new_content != content:
-                            compose_file.write_text(new_content, encoding="utf-8")
-                            print(f"[DockerManager] Migrated {app_dir.name} docker-compose.yml to LAN binding.")
-                            if self.is_app_running(app_dir.name):
-                                subprocess.run(
-                                    ["docker", "compose", "up", "-d", "--force-recreate"],
-                                    cwd=str(app_dir),
-                                    capture_output=True,
-                                    timeout=60
-                                )
+                    new_content = content
+
+                    # 1. Remove obsolete version attribute
+                    new_content = re.sub(r"^version:\s*['\"].*?['\"]\s*\n+", "", new_content, flags=re.MULTILINE)
+
+                    # 2. Strip 127.0.0.1: to bind on 0.0.0.0
+                    if "127.0.0.1:" in new_content:
+                        new_content = re.sub(r'([\'"])127\.0\.0\.1:(\d+:)', r'\g<1>\2', new_content)
+
+                    # 3. i2pd specific: ensure --http.strictheaders=false is present to prevent 'host mismatch'
+                    if app_dir.name == "i2pd" and "strictheaders" not in new_content:
+                        i2pd_cmd = (
+                            "    command:\n"
+                            "      - \"--http.address=0.0.0.0\"\n"
+                            "      - \"--http.strictheaders=false\"\n"
+                            "      - \"--httpproxy.address=0.0.0.0\"\n"
+                            "      - \"--socksproxy.address=0.0.0.0\"\n"
+                        )
+                        if "restart: unless-stopped" in new_content:
+                            new_content = new_content.replace(
+                                "restart: unless-stopped",
+                                "restart: unless-stopped\n" + i2pd_cmd
+                            )
+
+                    # 4. nextcloud specific: ensure NEXTCLOUD_TRUSTED_DOMAINS=* is present
+                    if app_dir.name == "nextcloud" and "NEXTCLOUD_TRUSTED_DOMAINS" not in new_content:
+                        if "REDIS_HOST=redis" in new_content:
+                            new_content = new_content.replace(
+                                "REDIS_HOST=redis",
+                                "REDIS_HOST=redis\n      - NEXTCLOUD_TRUSTED_DOMAINS=*"
+                            )
+
+                    if new_content != content:
+                        compose_file.write_text(new_content, encoding="utf-8")
+                        print(f"[DockerManager] Migrated {app_dir.name} docker-compose.yml to modern LAN configuration.")
+                        if self.is_app_running(app_dir.name):
+                            subprocess.run(
+                                ["docker", "compose", "up", "-d", "--force-recreate"],
+                                cwd=str(app_dir),
+                                capture_output=True,
+                                timeout=60
+                            )
                 except Exception as e:
                     print(f"[DockerManager] Error migrating {app_dir.name}: {e}")
 
