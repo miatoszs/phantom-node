@@ -1,0 +1,11 @@
+{
+  "id": "filebrowser",
+  "name": "FileBrowser",
+  "category": "Cloud & Storage",
+  "description": "Clean, ultra-lightweight web-based file manager. Upload, download, edit, and organize files inside private directories via browser or Tor.",
+  "opsec_level": "Level 1",
+  "web_port": 8085,
+  "onion_port": 80,
+  "memory_mb": 128,
+  "icon": "filebrowser"
+}

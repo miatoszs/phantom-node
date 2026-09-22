@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+from typing import Optional, Union, Dict
 import psutil
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
@@ -36,6 +37,11 @@ class PanicRequest(BaseModel):
 
 class UsbToggleRequest(BaseModel):
     arm: bool
+
+class AppInstallRequest(BaseModel):
+    web_port: Optional[int] = None
+    onion_port: Optional[int] = None
+    custom_env: Optional[Union[Dict[str, str], str]] = None
 
 @app.get("/", response_class=FileResponse)
 async def index():
@@ -82,9 +88,10 @@ async def list_apps():
     return docker_mgr.list_available_apps()
 
 @app.post("/api/apps/install/{app_id}")
-async def install_app(app_id: str, background_tasks: BackgroundTasks):
-    """Installs and launches a privacy app stack."""
-    res = docker_mgr.install_app(app_id)
+async def install_app(app_id: str, req: Optional[AppInstallRequest] = None):
+    """Installs and launches a privacy app stack with optional advanced config."""
+    config_dict = req.dict(exclude_none=True) if req else None
+    res = docker_mgr.install_app(app_id, custom_config=config_dict)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("error", "Installation failed."))
     return res

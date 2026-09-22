@@ -85,13 +85,14 @@ class DockerManager:
                 return data
         return None
 
-    def install_app(self, app_id: str) -> Dict:
+    def install_app(self, app_id: str, custom_config: Optional[Dict] = None) -> Dict:
         """
-        Installs an app from the catalog:
+        Installs an app from the catalog with optional custom port / env overrides:
         1. Copies app template to installed directory.
-        2. Populates secure secrets in .env.
-        3. Configures Tor v3 Hidden Service for its web port.
-        4. Launches docker compose up -d.
+        2. Populates secure secrets in .env and applies custom env overrides.
+        3. Replaces default ports in docker-compose.yml if custom_web_port is specified.
+        4. Configures Tor v3 Hidden Service for its web port.
+        5. Launches docker compose up -d.
         """
         source_dir = self.apps_dir / app_id
         target_dir = self.installed_dir / app_id
@@ -115,6 +116,40 @@ class DockerManager:
                     if not dest_subdir.exists():
                         shutil.copytree(item, dest_subdir)
 
+            default_web_port = manifest.get("web_port")
+            default_onion_port = manifest.get("onion_port", 80)
+
+            # Check for custom overrides
+            web_port = default_web_port
+            onion_port = default_onion_port
+
+            if custom_config:
+                if custom_config.get("web_port"):
+                    try:
+                        web_port = int(custom_config["web_port"])
+                    except (ValueError, TypeError):
+                        pass
+                if custom_config.get("onion_port"):
+                    try:
+                        onion_port = int(custom_config["onion_port"])
+                    except (ValueError, TypeError):
+                        pass
+
+            # Update docker-compose.yml with custom web port if modified
+            compose_file = target_dir / "docker-compose.yml"
+            if compose_file.exists() and default_web_port and web_port != default_web_port:
+                compose_content = compose_file.read_text(encoding="utf-8")
+                compose_content = compose_content.replace(f"127.0.0.1:{default_web_port}:", f"127.0.0.1:{web_port}:")
+                compose_content = compose_content.replace(f'"{default_web_port}:', f'"{web_port}:')
+                compose_file.write_text(compose_content, encoding="utf-8")
+
+            # Update installed manifest.json with effective ports
+            installed_manifest_path = target_dir / "manifest.json"
+            manifest["web_port"] = web_port
+            manifest["onion_port"] = onion_port
+            with open(installed_manifest_path, "w", encoding="utf-8") as fm:
+                json.dump(manifest, fm, indent=2, ensure_ascii=False)
+
             # Generate .env with randomized secrets
             env_example = source_dir / ".env.example"
             target_env = target_dir / ".env"
@@ -128,9 +163,18 @@ class DockerManager:
                 with open(target_env, "w", encoding="utf-8") as ft:
                     ft.write(content)
 
+            # Apply custom env vars if provided
+            if custom_config and custom_config.get("custom_env"):
+                custom_env_data = custom_config.get("custom_env")
+                with open(target_env, "a", encoding="utf-8") as fa:
+                    fa.write("\n# --- Custom User Overrides ---\n")
+                    if isinstance(custom_env_data, dict):
+                        for k, v in custom_env_data.items():
+                            fa.write(f"{k}={v}\n")
+                    elif isinstance(custom_env_data, str):
+                        fa.write(custom_env_data.strip() + "\n")
+
             # Register Tor Hidden Service if ports defined
-            web_port = manifest.get("web_port")
-            onion_port = manifest.get("onion_port", 80)
             if web_port:
                 self.tor_manager.add_hidden_service(app_id, {onion_port: web_port})
 

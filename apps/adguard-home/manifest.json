@@ -1,0 +1,11 @@
+{
+  "id": "adguard-home",
+  "name": "AdGuard Home",
+  "category": "Network & DNS",
+  "description": "Network-wide ad, tracker, and telemetry blocker with encrypted DNS server (DoH, DoT, DoQ). Lightweight web management console with custom blocklists.",
+  "opsec_level": "Level 1",
+  "web_port": 3053,
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "adguard-home"
+}

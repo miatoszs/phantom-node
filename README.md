@@ -31,24 +31,30 @@ A **PhantomNode OS** egy Debian 12 (Bookworm) vagy Kicksecure alapra épülő, �
 
 ---
 
-## 📦 Beépített Privacy Alkalmazáskatalógus (14 Tool)
+## 📦 Beépített Privacy Alkalmazáskatalógus (20 Tool)
 
 | Alkalmazás | Kategória | OPSEC Szint | Leírás |
 | :--- | :--- | :--- | :--- |
-| **Nextcloud** | Cloud & Data | OPSEC Level 2 | Saját felhőtárhely és szinkronizáció (Google Drive / OneDrive helyett) dedikált Tor proxyval. |
+| **AdGuard Home** | Network & DNS | OPSEC Level 1 | Teljes hálózati szintű DNS hirdetés-, tracking- és malware-blokkoló, DoH / DoT titkosított lekérdezésekkel. |
+| **Nextcloud** | Cloud & Storage | OPSEC Level 2 | Saját felhőtárhely és szinkronizáció (Google Drive / OneDrive helyett) dedikált Tor proxyval. |
 | **Vaultwarden** | Passwords & Auth | OPSEC Level 1 | Végponttól-végpontig titkosított (E2EE) jelszókezelő, hivatalos Bitwarden kliens támogatással. |
-| **Syncthing** | Cloud & Data | OPSEC Level 2 | Közvetlen P2P E2EE mappaszinkronizáció központi szerver nélkül, automatikus újracsatlakozással. |
-| **Pi-hole + Unbound** | Network & DNS | OPSEC Level 2 | Hálózati reklám- és telemetria-szűrő, teljesen független saját rekurzív gyökér-DNS szerverrel. |
-| **SimpleX SMP & XFTP** | Private Chat | OPSEC Level 3 | Metaadat-mentes, felhasználói azonosító nélküli (no user ID) chat- és média-kiszolgáló. |
-| **Matrix Synapse** | Private Chat | OPSEC Level 2 | Föderált, E2EE csoportos kommunikációs szerver (Discord/Slack helyett). |
-| **Ollama + Open WebUI** | Offline AI | OPSEC Level 3 | 100%-ban offline helyi AI (Gemma 3, Qwen, DeepSeek). Stylometry-védelem és fordítás felhő nélkül. |
-| **SearXNG** | Search & Media | OPSEC Level 1 | Megfigyelés-mentes metakereső (Google, Bing, DuckDuckGo párhuzamos lekérdezése). |
-| **Invidious** | Search & Media | OPSEC Level 1 | Privát YouTube kliens reklámok, követők és Google-profilozás nélkül. |
-| **Redlib** | Search & Media | OPSEC Level 1 | Pehelykönnyű, JavaScript-mentes Reddit frontend LibRedirect integrációval. |
-| **Forgejo** | Code & Dev | OPSEC Level 3 | Ön-hosztolt Git szerver (GitHub alternatíva), Tor mögött, e-mail regisztráció nélkül. |
-| **Monero Node (`monerod`)** | Crypto & Finance | OPSEC Level 4 | Saját teljes Monero blokklánc csomópont Tor/I2P RPC portokkal és P2Pool integrációval. |
-| **BorgBackup Server** | Cloud & Data | OPSEC Level 2 | Deduplikált, kliensoldali AES-256 titkosítású biztonsági mentési tárhely SSH over Tor-on át. |
-| **Cockpit Console** | System | OPSEC Level 1 | Rendszer- és hardverkezelő webkonzol (CPU, RAM, lemezek, virtuális gépek felügyelete). |
+| **WireGuard (WG-Easy)** | Encrypted Network | OPSEC Level 2 | Rendkívül gyors és modern WireGuard VPN szerver webes felülettel és 1-kattintásos QR kliensgenerálással. |
+| **Syncthing** | Continuous Sync | OPSEC Level 1 | Közvetlen P2P E2EE mappaszinkronizáció központi szerver nélkül, automatikus újracsatlakozással. |
+| **FileBrowser** | Cloud & Storage | OPSEC Level 1 | Pehelykönnyű, letisztult webes fájlkezelő és privát dokumentumtár gyors fájlmegosztással. |
+| **Pi-hole + Unbound** | Network & DNS | OPSEC Level 1 | Hálózati reklám- és telemetria-szűrő, teljesen független saját rekurzív gyökér-DNS szerverrel. |
+| **SimpleX SMP & XFTP** | Encrypted Comms | OPSEC Level 3 | Metaadat-mentes, felhasználói azonosító nélküli (no user ID) chat- és média-kiszolgáló. |
+| **Matrix Synapse** | Encrypted Comms | OPSEC Level 2 | Föderált, E2EE csoportos kommunikációs szerver (Discord/Slack helyett). |
+| **Ollama + Open WebUI** | Private AI | OPSEC Level 2 | 100%-ban offline helyi AI (Gemma 3, Qwen, DeepSeek). Stylometry-védelem és fordítás felhő nélkül. |
+| **Uptime Kuma** | Monitoring | OPSEC Level 1 | Ön-hosztolt szerver- és szolgáltatás-monitorozó, leállás-riasztásokkal és státuszoldallal. |
+| **SearXNG** | Private Search | OPSEC Level 1 | Megfigyelés-mentes metakereső (Google, Bing, DuckDuckGo párhuzamos lekérdezése). |
+| **Invidious** | Media & Streaming | OPSEC Level 1 | Privát YouTube kliens reklámok, követők és Google-profilozás nélkül. |
+| **Redlib** | Private Social | OPSEC Level 1 | Pehelykönnyű, JavaScript-mentes Reddit frontend LibRedirect integrációval. |
+| **RustDesk Server** | Remote Access | OPSEC Level 2 | Saját privát távoli asztal elérés és relay szerver (TeamViewer és AnyDesk kiváltására). |
+| **I2Pd Darknet Router** | Encrypted Network | OPSEC Level 3 | Pehelykönnyű C++ I2P router, end-to-end titkosított decentralizált darknet kommunikációhoz. |
+| **Forgejo** | Development | OPSEC Level 1 | Ön-hosztolt Git szerver (GitHub alternatíva), Tor mögött, e-mail regisztráció nélkül. |
+| **Monero Node (`monerod`)** | Financial Privacy | OPSEC Level 3 | Saját teljes Monero blokklánc csomópont Tor/I2P RPC portokkal és P2Pool integrációval. |
+| **BorgBackup Server** | Backup & Recovery | OPSEC Level 2 | Deduplikált, kliensoldali AES-256 titkosítású biztonsági mentési tárhely SSH over Tor-on át. |
+| **Cockpit Console** | System Admin | OPSEC Level 1 | Rendszer- és hardverkezelő webkonzol (CPU, RAM, lemezek, virtuális gépek felügyelete). |
 
 ---
 
@@ -80,9 +86,11 @@ Nyisd meg a böngésződben a kapott címet:
 
 ### Funkciók a Dashboardon:
 - **Rendszer Telemetria:** Valós idejű CPU, RAM, lemezhasználat és Tor állapot kijelzés.
-- **Privacy App Store:** Egyetlen kattintással telepíthetsz bármilyen privacy eszközt.
-- **Onion & QR Center:** Bármely telepített alkalmazásnál a 🧅 Onion gombra kattintva megjelenik a dedikált Tor `.onion` cím és egy azonnal beolvasható QR-kód a mobil Tor Browserhez.
+- **Privacy App Store & 1-Kattintásos Telepítés:** Egyetlen gombnyomással azonnal üzembe helyezhető bármely privacy stack.
+- **Haladó Beállítások (Advanced Options):** A fogaskerék ikonra kattintva egyéni helyi web portot, egyéni Tor .onion portot (alapértelmezett 80) és környezeti változókat (.env overrides) adhatsz meg a konténer indítása előtt.
+- **Onion & QR Center:** Bármely telepített alkalmazásnál a 🧅 Tor v3 gombra kattintva megjelenik a dedikált Tor `.onion` cím és egy azonnal beolvasható QR-kód a mobil Tor Browserhez.
 - **OPSEC Központ:** A jobb felső pajzs ikonra kattintva élesítheted a fizikai USB Dead Man's Switch védelmet, vagy vészhelyzet esetén aktiválhatod az azonnali kényszerített memóriatörlést és leállítást.
+- **1-Kattintásos Rendszerfrissítés (OTA):** A fejlécben lévő verziószámra kattintva a rendszer automatikusan ellenőrzi a GitHub kiadásokat és gombnyomásra frissíti a kódbázist valamint újraindítja a démont.
 
 ---
 
@@ -97,10 +105,14 @@ phantom status
 # Elérhető és telepített alkalmazások listázása
 phantom app list
 
-# Alkalmazás telepítése egyetlen paranccsal
+# Alkalmazás gyors telepítése
+phantom app install adguard-home
 phantom app install nextcloud
-phantom app install vaultwarden
-phantom app install searxng
+
+# Alkalmazás telepítése egyéni porttal vagy interaktív haladó módban
+phantom app install adguard-home --port 8053
+phantom app install vaultwarden --advanced
+
 
 # Alkalmazás kezelése
 phantom app start <app_id>

@@ -14,6 +14,7 @@ const ICONS = {
     terminal: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>`,
     trash: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`,
     deploy: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`,
+    settings: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
     spinner: `<svg class="btn-icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="12"></circle></svg>`
 };
 
@@ -178,10 +179,15 @@ function renderApps() {
                 ${ICONS.trash}
             </button>
         ` : `
-            <button class="btn btn-primary" id="btn-install-${app.id}" onclick="installApp('${app.id}', '${app.name}')" style="width: 100%; justify-content: center;">
-                ${ICONS.deploy}
-                <span>1-Click Deploy</span>
-            </button>
+            <div style="display: flex; gap: 8px; width: 100%;">
+                <button class="btn btn-primary" id="btn-install-${app.id}" onclick="installApp('${app.id}', '${app.name}')" style="flex: 1; justify-content: center;">
+                    ${ICONS.deploy}
+                    <span>1-Click Deploy</span>
+                </button>
+                <button class="btn btn-secondary" onclick="openAdvancedInstallModal('${app.id}', '${app.name}', ${app.web_port || 80}, ${app.onion_port || 80})" title="Advanced Custom Settings" style="padding: 0 12px; display: inline-flex; align-items: center; justify-content: center;">
+                    ${ICONS.settings}
+                </button>
+            </div>
         `;
 
         const iconHtml = getAppIconHtml(app.icon, app.name);
@@ -534,5 +540,109 @@ async function applySystemUpdate() {
         // Since the server restarts, fetch might drop network
         showToast('System is restarting with new updates. Reconnecting...', 'info');
         setTimeout(() => window.location.reload(), 4000);
+    }
+}
+
+// ==============================================================================
+// Advanced App Deployment Modal Handlers
+// ==============================================================================
+
+function openAdvancedInstallModal(appId, appName, defWebPort, defOnionPort) {
+    const modal = document.getElementById('advanced-install-modal');
+    if (!modal) return;
+
+    document.getElementById('adv-app-id').value = appId;
+    document.getElementById('adv-install-title').innerText = `${appName} – Advanced Deployment`;
+    document.getElementById('adv-install-subtitle').innerText = `Configure port routing, Tor onion bindings, and custom environment variables for ${appName}.`;
+    document.getElementById('adv-web-port').value = defWebPort || 80;
+    document.getElementById('adv-onion-port').value = defOnionPort || 80;
+    document.getElementById('adv-env-vars').value = '';
+
+    const submitBtn = document.getElementById('btn-adv-submit');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>Deploy with Custom Settings</span>
+        `;
+    }
+
+    modal.classList.add('open');
+}
+
+function closeAdvancedInstallModal() {
+    const modal = document.getElementById('advanced-install-modal');
+    if (modal) modal.classList.remove('open');
+}
+
+async function submitAdvancedInstall(e) {
+    e.preventDefault();
+    const appId = document.getElementById('adv-app-id').value;
+    const webPort = parseInt(document.getElementById('adv-web-port').value, 10);
+    const onionPort = parseInt(document.getElementById('adv-onion-port').value, 10);
+    const envRaw = document.getElementById('adv-env-vars').value;
+    const submitBtn = document.getElementById('btn-adv-submit');
+
+    if (!appId) return;
+
+    // Parse custom environment overrides into key=value mapping
+    const customEnv = {};
+    if (envRaw) {
+        envRaw.split('\n').forEach(line => {
+            line = line.trim();
+            if (line && !line.startsWith('#') && line.includes('=')) {
+                const idx = line.indexOf('=');
+                const k = line.substring(0, idx).trim();
+                const v = line.substring(idx + 1).trim();
+                if (k) customEnv[k] = v;
+            }
+        });
+    }
+
+    if (submitBtn) {
+        submitBtn.innerHTML = `${ICONS.spinner} <span>Deploying container...</span>`;
+        submitBtn.disabled = true;
+    }
+
+    showToast(`Deploying ${appId} with custom configuration...`, 'info');
+
+    try {
+        const payload = {
+            web_port: webPort,
+            onion_port: onionPort,
+            custom_env: Object.keys(customEnv).length > 0 ? customEnv : (envRaw.trim() ? envRaw.trim() : null)
+        };
+
+        const res = await fetch(`/api/apps/install/${appId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showToast(`${appId} custom deployment succeeded!`, 'success');
+            closeAdvancedInstallModal();
+            await fetchApps();
+        } else {
+            showToast(`Deployment error: ${data.detail || 'Failed to deploy.'}`, 'error');
+            if (submitBtn) {
+                submitBtn.innerHTML = `
+                    <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Deploy with Custom Settings</span>
+                `;
+                submitBtn.disabled = false;
+            }
+        }
+    } catch (err) {
+        showToast('Network error during deployment.', 'error');
+        if (submitBtn) {
+            submitBtn.innerHTML = `
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Deploy with Custom Settings</span>
+            `;
+            submitBtn.disabled = false;
+        }
     }
 }

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  i2pd:
+    image: purplei2p/i2pd:latest
+    container_name: phantom_i2pd
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:7070:7070"
+      - "127.0.0.1:4444:4444"
+      - "127.0.0.1:4447:4447"
+    volumes:
+      - ./data:/var/lib/i2pd

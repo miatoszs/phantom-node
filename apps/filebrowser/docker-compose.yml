@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: phantom_filebrowser
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8085:80"
+    volumes:
+      - ./srv:/srv
+      - ./data/filebrowser.db:/database/filebrowser.db
+      - ./data/settings.json:/config/settings.json

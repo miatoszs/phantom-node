@@ -1,0 +1,11 @@
+{
+  "id": "rustdesk",
+  "name": "RustDesk Relay Server",
+  "category": "Remote Access",
+  "description": "Self-hosted rendezvous and relay server for RustDesk remote desktop. Complete ownership of data without TeamViewer/AnyDesk corporate telemetry.",
+  "opsec_level": "Level 2",
+  "web_port": 21116,
+  "onion_port": 21116,
+  "memory_mb": 256,
+  "icon": "rustdesk"
+}
