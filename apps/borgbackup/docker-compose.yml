@@ -4,7 +4,7 @@ services:
     container_name: borgserver
     restart: unless-stopped
     ports:
-      - "127.0.0.1:2223:22"
+      - "2223:22"
     volumes:
       - borg_data:/backups
       - ./ssh_keys:/sshkeys

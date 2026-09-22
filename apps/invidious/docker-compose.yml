@@ -17,7 +17,7 @@ services:
     depends_on:
       - invidious-db
     ports:
-      - "127.0.0.1:3002:3000"
+      - "3002:3000"
     environment:
       INVIDIOUS_CONFIG: |
         db:

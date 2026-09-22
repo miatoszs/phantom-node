@@ -30,7 +30,7 @@ services:
       - "53:53/tcp"
       - "53:53/udp"
       # Web interface loopback
-      - "127.0.0.1:8053:80"
+      - "8053:80"
     networks:
       pihole_net:
         ipv4_address: 172.29.0.3

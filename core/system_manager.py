@@ -206,7 +206,21 @@ class SystemManager:
                 except Exception as ep:
                     print(f"[SystemManager] Pip update warning: {ep}")
 
-            # 5. Schedule daemon restart in 1.5 seconds so API response finishes cleanly
+            # 5. Automatically migrate installed apps to LAN port bindings & update firewall rules
+            try:
+                from .docker_manager import DockerManager
+                DockerManager().fix_installed_port_bindings()
+            except Exception as em:
+                print(f"[SystemManager] Port migration notice: {em}")
+
+            try:
+                hardening_script = self.base_dir / "scripts" / "hardening.sh"
+                if hardening_script.exists():
+                    subprocess.run(["bash", str(hardening_script)], capture_output=True, timeout=15)
+            except Exception as eh:
+                print(f"[SystemManager] Hardening notice: {eh}")
+
+            # 6. Schedule daemon restart in 1.5 seconds so API response finishes cleanly
             restart_cmd = "sleep 1.5 && systemctl restart phantom-dashboard.service"
             subprocess.Popen(["bash", "-c", restart_cmd])
 

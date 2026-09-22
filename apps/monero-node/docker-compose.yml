@@ -9,9 +9,9 @@ services:
       # P2P port
       - "18080:18080"
       # Restricted RPC port on localhost only
-      - "127.0.0.1:18081:18081"
+      - "18081:18081"
       # ZMQ port for P2Pool
-      - "127.0.0.1:18084:18084"
+      - "18084:18084"
     command:
       - "--rpc-restricted-bind-ip=0.0.0.0"
       - "--rpc-restricted-bind-port=18081"
@@ -33,7 +33,7 @@ services:
       - MONERO_HOST=monerod
       - MONERO_PORT=18081
     ports:
-      - "127.0.0.1:18088:3000"
+      - "18088:3000"
     security_opt:
       - no-new-privileges:true
 

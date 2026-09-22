@@ -119,9 +119,11 @@ def cmd_app(args):
             manifest = docker_mgr.get_app_manifest(app_id) or {}
             web_label = manifest.get("web_port_label", "Local Web Port")
             def_web = manifest.get("web_port", 80)
+            sug_web = docker_mgr.find_available_port(def_web) if docker_mgr.is_port_in_use(def_web, exclude_app_id=app_id) else def_web
             def_onion = manifest.get("onion_port", 80)
             print(f"\n\033[1m--- Advanced Installation: {app_id} ---\033[0m")
-            in_port = input(f"Custom {web_label} [{def_web}]: ").strip()
+            prompt_label = f"[{def_web}]" if sug_web == def_web else f"[{def_web} busy! suggested: {sug_web}]"
+            in_port = input(f"Custom {web_label} {prompt_label}: ").strip()
             if in_port:
                 try:
                     custom_config["web_port"] = int(in_port)
@@ -141,14 +143,17 @@ def cmd_app(args):
                     ep_key = ep.get("key")
                     ep_label = ep.get("label", ep_key)
                     ep_def = ep.get("default")
-                    in_ep = input(f"Custom {ep_label} [{ep_def}]: ").strip()
+                    ep_proto = ep.get("protocol", "tcp")
+                    sug_ep = docker_mgr.find_available_port(ep_def, protocol=ep_proto, exclude_app_id=app_id) if docker_mgr.is_port_in_use(ep_def, protocol=ep_proto, exclude_app_id=app_id) else ep_def
+                    ep_prompt = f"[{ep_def}]" if sug_ep == ep_def else f"[{ep_def} busy! suggested: {sug_ep}]"
+                    in_ep = input(f"Custom {ep_label} {ep_prompt}: ").strip()
                     if in_ep:
                         try:
                             custom_config["extra_ports"][ep_key] = int(in_ep)
                         except ValueError:
                             pass
                     else:
-                        custom_config["extra_ports"][ep_key] = ep_def
+                        custom_config["extra_ports"][ep_key] = sug_ep
 
             print("Enter custom .env variables (empty line to finish):")
             env_lines = []
@@ -164,11 +169,17 @@ def cmd_app(args):
         res = docker_mgr.install_app(app_id, custom_config=custom_config if custom_config else None)
         if res.get("success"):
             print(f"\033[32m[+] Successfully installed {app_id}!\033[0m")
+            if res.get("port_reallocated"):
+                print(f"\033[33m[*] Notice: Port conflict detected. Automatically assigned free port: {res.get('web_port')}\033[0m")
             if res.get("onion"):
                 print(f"[*] Tor .onion URL: http://{res['onion']}")
             print(f"[*] Local LAN Port: {res.get('web_port')}")
         else:
             print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
+    elif sub == "fix-ports":
+        print("[*] Migrating all installed apps to LAN port bindings (0.0.0.0)...")
+        docker_mgr.fix_installed_port_bindings()
+        print("\033[32m[+] Done!\033[0m")
     elif sub in ["start", "stop", "restart"]:
         if len(args) < 2:
             print(f"[!] Please specify app_id: phantom app {sub} <app_id>")

@@ -9,7 +9,7 @@ services:
     volumes:
       - synapse_data:/data
     ports:
-      - "127.0.0.1:8008:8008"
+      - "8008:8008"
     security_opt:
       - no-new-privileges:true
 

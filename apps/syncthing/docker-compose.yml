@@ -11,7 +11,7 @@ services:
       - syncthing_data:/var/syncthing
     ports:
       # Local GUI loopback
-      - "127.0.0.1:8384:8384"
+      - "8384:8384"
       # Sync protocol
       - "22000:22000/tcp"
       - "22000:22000/udp"

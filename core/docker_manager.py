@@ -1,7 +1,10 @@
+import errno
 import json
 import os
+import re
 import secrets
 import shutil
+import socket
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -15,6 +18,10 @@ class DockerManager:
         self.apps_dir = APPS_DIR
         self.installed_dir = INSTALLED_APPS_DIR
         self.tor_manager = TorManager()
+        try:
+            self.fix_installed_port_bindings()
+        except Exception as e:
+            print(f"[DockerManager] Notice: fix_installed_port_bindings exception: {e}")
 
     def is_docker_running(self) -> bool:
         """Verifies if Docker daemon is responsive."""
@@ -29,8 +36,115 @@ class DockerManager:
         except Exception:
             return False
 
+    def is_port_in_use(self, port: int, protocol: str = "tcp", exclude_app_id: Optional[str] = None) -> bool:
+        """
+        Checks if a port is currently in use either by an active listening socket on the host,
+        or already claimed by another installed PhantomNode app.
+        """
+        if not port or port <= 0 or port > 65535:
+            return True
+
+        # 1. Check if claimed by another installed PhantomNode app
+        if self.installed_dir.exists():
+            for app_dir in self.installed_dir.iterdir():
+                if app_dir.is_dir() and app_dir.name != exclude_app_id:
+                    man_file = app_dir / "manifest.json"
+                    if man_file.exists():
+                        try:
+                            with open(man_file, "r", encoding="utf-8") as f:
+                                data = json.load(f)
+                                if data.get("web_port") == port:
+                                    return True
+                                for ep in data.get("extra_ports", []):
+                                    if ep.get("default") == port:
+                                        return True
+                        except Exception:
+                            pass
+
+        proto = protocol.lower()
+        if proto == "udp":
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                    s.bind(("0.0.0.0", port))
+            except OSError as e:
+                if e.errno == errno.EADDRINUSE:
+                    return True
+        else:
+            # TCP check:
+            # 1. Active connect check
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.1)
+                    if s.connect_ex(("127.0.0.1", port)) == 0:
+                        return True
+            except Exception:
+                pass
+
+            # 2. Bind check on all interfaces and loopback
+            for host in ("0.0.0.0", "127.0.0.1"):
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                        s.bind((host, port))
+                except OSError as e:
+                    if e.errno == errno.EADDRINUSE:
+                        return True
+
+        return False
+
+    def find_available_port(self, preferred_port: int, protocol: str = "tcp", exclude_app_id: Optional[str] = None) -> int:
+        """
+        Finds an available port starting at preferred_port.
+        If preferred_port is free, returns it immediately.
+        Otherwise sequentially finds the next free port.
+        """
+        candidate = preferred_port
+        if not self.is_port_in_use(candidate, protocol=protocol, exclude_app_id=exclude_app_id):
+            return candidate
+
+        # Search upwards
+        for p in range(candidate + 1, min(candidate + 1000, 65535)):
+            if not self.is_port_in_use(p, protocol=protocol, exclude_app_id=exclude_app_id):
+                return p
+
+        # Search downwards if not found
+        for p in range(max(1024, candidate - 1000), candidate):
+            if not self.is_port_in_use(p, protocol=protocol, exclude_app_id=exclude_app_id):
+                return p
+
+        return candidate
+
+    def fix_installed_port_bindings(self):
+        """
+        Scans all installed apps and migrates any localhost-only (127.0.0.1) bindings
+        in docker-compose.yml to all interfaces (0.0.0.0) so they are accessible on LAN.
+        """
+        if not self.installed_dir.exists():
+            return
+        for app_dir in self.installed_dir.iterdir():
+            if not app_dir.is_dir():
+                continue
+            compose_file = app_dir / "docker-compose.yml"
+            if compose_file.exists():
+                try:
+                    content = compose_file.read_text(encoding="utf-8")
+                    if "127.0.0.1:" in content:
+                        new_content = re.sub(r'([\'"])127\.0\.0\.1:(\d+:)', r'\g<1>\2', content)
+                        if new_content != content:
+                            compose_file.write_text(new_content, encoding="utf-8")
+                            print(f"[DockerManager] Migrated {app_dir.name} docker-compose.yml to LAN binding.")
+                            if self.is_app_running(app_dir.name):
+                                subprocess.run(
+                                    ["docker", "compose", "up", "-d", "--force-recreate"],
+                                    cwd=str(app_dir),
+                                    capture_output=True,
+                                    timeout=60
+                                )
+                except Exception as e:
+                    print(f"[DockerManager] Error migrating {app_dir.name}: {e}")
+
     def list_available_apps(self) -> List[Dict]:
-        """Scans catalog and returns metadata of all installable apps."""
+        """Scans catalog and returns metadata of all installable apps with conflict detection."""
         catalog = []
         if not self.apps_dir.exists():
             return catalog
@@ -58,6 +172,21 @@ class DockerManager:
                                         manifest["extra_ports"] = inst_data["extra_ports"]
                             except Exception:
                                 pass
+                        manifest["suggested_web_port"] = manifest.get("web_port")
+                        manifest["port_conflict"] = False
+                    else:
+                        def_web = manifest.get("web_port")
+                        has_conflict = self.is_port_in_use(def_web, protocol="tcp", exclude_app_id=app_id)
+                        manifest["port_conflict"] = has_conflict
+                        manifest["suggested_web_port"] = self.find_available_port(def_web, protocol="tcp", exclude_app_id=app_id) if has_conflict else def_web
+
+                        for ep in manifest.get("extra_ports", []):
+                            ep_def = ep.get("default")
+                            ep_proto = ep.get("protocol", "tcp")
+                            ep_conflict = self.is_port_in_use(ep_def, protocol=ep_proto, exclude_app_id=app_id)
+                            ep["conflict"] = ep_conflict
+                            ep["suggested_port"] = self.find_available_port(ep_def, protocol=ep_proto, exclude_app_id=app_id) if ep_conflict else ep_def
+
                     catalog.append(manifest)
             except Exception as e:
                 print(f"[DockerManager] Error reading manifest {manifest_file}: {e}")
@@ -133,55 +262,82 @@ class DockerManager:
             default_web_port = manifest.get("web_port")
             default_onion_port = manifest.get("onion_port", 80)
 
-            # Check for custom overrides
-            web_port = default_web_port
+            # Determine requested web port
+            req_web_port = default_web_port
+            if custom_config and custom_config.get("web_port"):
+                try:
+                    req_web_port = int(custom_config["web_port"])
+                except (ValueError, TypeError):
+                    pass
+
+            # Conflict check for web port: if busy, auto-resolve to free port
+            web_port = req_web_port
+            port_reallocated = False
+            if self.is_port_in_use(web_port, protocol="tcp", exclude_app_id=app_id):
+                web_port = self.find_available_port(web_port, protocol="tcp", exclude_app_id=app_id)
+                port_reallocated = True
+                print(f"[DockerManager] Port conflict: {req_web_port} in use! Auto-assigned available port {web_port} for '{app_id}'.")
+
             onion_port = default_onion_port
+            if custom_config and custom_config.get("onion_port"):
+                try:
+                    onion_port = int(custom_config["onion_port"])
+                except (ValueError, TypeError):
+                    pass
 
-            if custom_config:
-                if custom_config.get("web_port"):
-                    try:
-                        web_port = int(custom_config["web_port"])
-                    except (ValueError, TypeError):
-                        pass
-                if custom_config.get("onion_port"):
-                    try:
-                        onion_port = int(custom_config["onion_port"])
-                    except (ValueError, TypeError):
-                        pass
-
-            # Update docker-compose.yml with custom web port and extra ports if modified
+            # Update docker-compose.yml:
+            # 1. Strip 127.0.0.1: to ensure LAN accessibility across all host interfaces
+            # 2. Re-map default_web_port to web_port
+            # 3. Process extra_ports overrides and conflicts
             compose_file = target_dir / "docker-compose.yml"
             if compose_file.exists():
                 compose_content = compose_file.read_text(encoding="utf-8")
-                modified_compose = False
 
-                if default_web_port and web_port != default_web_port:
-                    compose_content = compose_content.replace(f"127.0.0.1:{default_web_port}:", f"127.0.0.1:{web_port}:")
-                    compose_content = compose_content.replace(f'"{default_web_port}:', f'"{web_port}:')
-                    compose_content = compose_content.replace(f"'{default_web_port}:", f"'{web_port}:")
-                    modified_compose = True
+                # Strip 127.0.0.1: so container binds to 0.0.0.0 (LAN + Tor loopback)
+                compose_content = re.sub(r'([\'"])127\.0\.0\.1:(\d+:)', r'\g<1>\2', compose_content)
 
-                # Process extra ports overrides (e.g. Node RPC port, DNS port, VPN port)
+                if default_web_port:
+                    compose_content = re.sub(
+                        rf'([\'"])(?:127\.0\.0\.1:|0\.0\.0\.0:)?{default_web_port}:',
+                        rf'\g<1>{web_port}:',
+                        compose_content
+                    )
+
+                # Process extra ports overrides & conflict resolution (e.g. Node RPC port, DNS port, VPN port)
                 extra_ports_cfg = custom_config.get("extra_ports") if custom_config else None
-                if extra_ports_cfg and isinstance(extra_ports_cfg, dict):
-                    for ep in manifest.get("extra_ports", []):
-                        ep_key = ep.get("key")
-                        def_val = ep.get("default")
-                        if ep_key in extra_ports_cfg:
-                            try:
-                                custom_val = int(extra_ports_cfg[ep_key])
-                                if custom_val != def_val:
-                                    compose_content = compose_content.replace(f"127.0.0.1:{def_val}:", f"127.0.0.1:{custom_val}:")
-                                    compose_content = compose_content.replace(f'"{def_val}:', f'"{custom_val}:')
-                                    compose_content = compose_content.replace(f"'{def_val}:", f"'{custom_val}:")
-                                    compose_content = compose_content.replace(f"WG_PORT={def_val}", f"WG_PORT={custom_val}")
-                                    modified_compose = True
-                                ep["default"] = custom_val
-                            except (ValueError, TypeError):
-                                pass
+                for ep in manifest.get("extra_ports", []):
+                    ep_key = ep.get("key")
+                    ep_proto = ep.get("protocol", "tcp")
+                    ep_orig_def = ep.get("default")
 
-                if modified_compose:
-                    compose_file.write_text(compose_content, encoding="utf-8")
+                    req_ep_val = ep_orig_def
+                    if extra_ports_cfg and isinstance(extra_ports_cfg, dict) and ep_key in extra_ports_cfg:
+                        try:
+                            req_ep_val = int(extra_ports_cfg[ep_key])
+                        except (ValueError, TypeError):
+                            pass
+
+                    actual_ep_val = req_ep_val
+                    if self.is_port_in_use(actual_ep_val, protocol=ep_proto, exclude_app_id=app_id):
+                        actual_ep_val = self.find_available_port(actual_ep_val, protocol=ep_proto, exclude_app_id=app_id)
+                        port_reallocated = True
+                        print(f"[DockerManager] Extra port conflict for {app_id} [{ep_key}]: {req_ep_val} in use, auto-assigned {actual_ep_val}")
+
+                    if actual_ep_val != ep_orig_def:
+                        compose_content = re.sub(
+                            rf'([\'"])(?:127\.0\.0\.1:|0\.0\.0\.0:)?{ep_orig_def}:',
+                            rf'\g<1>{actual_ep_val}:',
+                            compose_content
+                        )
+                        compose_content = re.sub(
+                            rf'WG_PORT={ep_orig_def}\b',
+                            f'WG_PORT={actual_ep_val}',
+                            compose_content
+                        )
+
+                    ep["default"] = actual_ep_val
+
+                compose_file.write_text(compose_content, encoding="utf-8")
 
             # Update installed manifest.json with effective ports
             installed_manifest_path = target_dir / "manifest.json"
@@ -239,7 +395,9 @@ class DockerManager:
                 "app_id": app_id,
                 "onion": onion_addr,
                 "web_port": web_port,
-                "message": f"Successfully installed and started {manifest.get('name', app_id)}."
+                "extra_ports": manifest.get("extra_ports"),
+                "port_reallocated": port_reallocated,
+                "message": f"Successfully installed and started {manifest.get('name', app_id)} on port {web_port}." + (f" (Port was auto-assigned due to conflict on {req_web_port})" if port_reallocated else "")
             }
 
         except Exception as e:

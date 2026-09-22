@@ -86,15 +86,11 @@ if command -v ufw >/dev/null 2>&1; then
     # Allow Loopback (Required for Tor Hidden Service reverse proxies)
     ufw allow in on lo to any
 
-    # Allow Local Private Networks (LAN only for Dashboard & SSH)
-    # 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12
-    ufw allow from 192.168.0.0/16 to any port 7426 proto tcp comment 'PhantomNode Dashboard LAN'
-    ufw allow from 10.0.0.0/8 to any port 7426 proto tcp comment 'PhantomNode Dashboard LAN'
-    ufw allow from 172.16.0.0/12 to any port 7426 proto tcp comment 'PhantomNode Dashboard LAN'
-
-    ufw allow from 192.168.0.0/16 to any port 22 proto tcp comment 'SSH LAN'
-    ufw allow from 10.0.0.0/8 to any port 22 proto tcp comment 'SSH LAN'
-    ufw allow from 172.16.0.0/12 to any port 22 proto tcp comment 'SSH LAN'
+    # Allow Local Private Networks (LAN for Dashboard, Installed Apps, DNS & SSH)
+    # RFC 1918 Private Ranges - Zero WAN exposure (incoming from public internet remains DENIED by default)
+    ufw allow from 192.168.0.0/16 to any comment 'PhantomNode LAN Access'
+    ufw allow from 10.0.0.0/8 to any comment 'PhantomNode LAN Access'
+    ufw allow from 172.16.0.0/12 to any comment 'PhantomNode LAN Access'
 
     ufw --force enable
     echo "[+] UFW Firewall enabled with strict LAN-only rules."

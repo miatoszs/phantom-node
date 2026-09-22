@@ -249,7 +249,11 @@ async function installApp(appId, appName) {
         const res = await fetch(`/api/apps/install/${appId}`, { method: 'POST' });
         const data = await res.json();
         if (res.ok) {
-            showToast(`${appName} deployed successfully!`, 'success');
+            if (data.port_reallocated) {
+                showToast(`${appName} deployed! Auto-assigned to free port ${data.web_port}.`, 'success');
+            } else {
+                showToast(`${appName} deployed successfully!`, 'success');
+            }
             await fetchApps();
         } else {
             showToast(`Installation error: ${data.detail || 'Failed to deploy.'}`, 'error');
@@ -368,7 +372,15 @@ async function updateAllApps() {
 
 function openApp(appId, port, onion) {
     const host = window.location.hostname;
-    window.open(`http://${host}:${port}`, '_blank');
+    if (host.endsWith('.onion')) {
+        if (onion) {
+            window.open(`http://${onion}`, '_blank');
+        } else {
+            showToast('Tor onion address not available for this app yet.', 'warning');
+        }
+    } else {
+        window.open(`http://${host}:${port}`, '_blank');
+    }
 }
 
 function showOnionModal(appName, onion, port) {
@@ -655,9 +667,20 @@ function openAdvancedInstallModal(appId, appName, defWebPort, defOnionPort) {
         webPortLabel.innerText = (app && app.web_port_label) ? app.web_port_label.toUpperCase() : 'LOCAL WEB PORT';
     }
 
-    document.getElementById('adv-web-port').value = defWebPort || 80;
+    const effectiveWebPort = (app && app.suggested_web_port) ? app.suggested_web_port : (defWebPort || 80);
+    document.getElementById('adv-web-port').value = effectiveWebPort;
     document.getElementById('adv-onion-port').value = defOnionPort || 80;
     document.getElementById('adv-env-vars').value = '';
+
+    const webPortHint = document.getElementById('adv-web-port-hint');
+    if (webPortHint) {
+        if (app && app.port_conflict) {
+            webPortHint.innerHTML = `<span style="color: var(--amber-glow); font-weight: 600;">⚠ Default port ${defWebPort} is busy; auto-suggested free port: ${effectiveWebPort}</span>`;
+            webPortHint.style.display = 'block';
+        } else {
+            webPortHint.style.display = 'none';
+        }
+    }
 
     // Render extra service ports if defined in the manifest (e.g. Monero Node RPC/P2P, DNS, VPN)
     const extraWrapper = document.getElementById('adv-extra-ports-wrapper');
@@ -667,11 +690,12 @@ function openAdvancedInstallModal(appId, appName, defWebPort, defOnionPort) {
         if (app && app.extra_ports && Array.isArray(app.extra_ports) && app.extra_ports.length > 0) {
             extraWrapper.style.display = 'block';
             app.extra_ports.forEach(ep => {
+                const effectiveEpVal = ep.suggested_port || ep.default;
                 const col = document.createElement('div');
                 col.innerHTML = `
                     <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.5px;">${ep.label.toUpperCase()}</label>
-                    <input type="number" class="adv-extra-port-input" data-key="${ep.key}" required min="1" max="65535" value="${ep.default}" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14px; font-family: monospace;">
-                    ${ep.description ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">${ep.description}</div>` : ''}
+                    <input type="number" class="adv-extra-port-input" data-key="${ep.key}" required min="1" max="65535" value="${effectiveEpVal}" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14px; font-family: monospace;">
+                    ${ep.conflict ? `<div style="font-size: 10px; color: var(--amber-glow); margin-top: 4px; font-weight: 600;">⚠ Default port ${ep.default} busy; suggested: ${effectiveEpVal}</div>` : (ep.description ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">${ep.description}</div>` : '')}
                 `;
                 extraGrid.appendChild(col);
             });
@@ -755,7 +779,11 @@ async function submitAdvancedInstall(e) {
         const data = await res.json();
 
         if (res.ok) {
-            showToast(`${appId} custom deployment succeeded!`, 'success');
+            if (data.port_reallocated) {
+                showToast(`${appId} custom deployment succeeded! (Allocated port: ${data.web_port})`, 'success');
+            } else {
+                showToast(`${appId} custom deployment succeeded!`, 'success');
+            }
             closeAdvancedInstallModal();
             await fetchApps();
         } else {
