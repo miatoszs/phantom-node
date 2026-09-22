@@ -50,7 +50,7 @@ A **PhantomNode OS** egy Debian 12 (Bookworm) vagy Kicksecure alapra épülő, �
 | **Redlib** | Private Social | OPSEC Level 1 | Pehelykönnyű, JavaScript-mentes Reddit frontend LibRedirect integrációval. |
 | **I2Pd Darknet Router** | Encrypted Network | OPSEC Level 3 | Pehelykönnyű C++ I2P router, end-to-end titkosított decentralizált darknet kommunikációhoz. |
 | **Forgejo** | Development | OPSEC Level 1 | Ön-hosztolt Git szerver (GitHub alternatíva), Tor mögött, e-mail regisztráció nélkül. |
-| **Monero Node (`monerod`)** | Financial Privacy | OPSEC Level 3 | Saját teljes Monero blokklánc csomópont Tor/I2P RPC portokkal és P2Pool integrációval. |
+| **Monero Node & Dashboard** | Financial Privacy | OPSEC Level 3 | Saját teljes Monero blokklánc csomópont és beépített valós idejű webes felügyeleti dashboard (blokkmagasság, peer kapcsolatok, hashrate). |
 | **BorgBackup Server** | Backup & Recovery | OPSEC Level 2 | Deduplikált, kliensoldali AES-256 titkosítású biztonsági mentési tárhely SSH over Tor-on át. |
 | **Cockpit Console** | System Admin | OPSEC Level 1 | Rendszer- és hardverkezelő webkonzol (CPU, RAM, lemezek, virtuális gépek felügyelete). |
 

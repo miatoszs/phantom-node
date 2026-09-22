@@ -1,6 +1,6 @@
 services:
   monerod:
-    image: sethforprivacy/simple-monerod:latest
+    image: sethsimmons/simple-monerod:latest
     container_name: monerod
     restart: unless-stopped
     volumes:
@@ -20,6 +20,20 @@ services:
       - "--enable-dns-blocklist"
       - "--prune-blockchain"
       - "--zmq-pub=tcp://0.0.0.0:18084"
+    security_opt:
+      - no-new-privileges:true
+
+  dashboard:
+    image: brechtdoran/monero-node-dashboard:latest
+    container_name: monero_dashboard
+    restart: unless-stopped
+    depends_on:
+      - monerod
+    environment:
+      - MONERO_HOST=monerod
+      - MONERO_PORT=18081
+    ports:
+      - "127.0.0.1:18088:3000"
     security_opt:
       - no-new-privileges:true
 

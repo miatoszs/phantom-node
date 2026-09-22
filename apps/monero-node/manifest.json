@@ -1,11 +1,11 @@
 {
   "id": "monero-node",
-  "name": "Monero Full Node",
+  "name": "Monero Node & Dashboard",
   "category": "Financial Privacy",
-  "description": "Full validating node for Monero (XMR). Broadcast anonymous, untraceable transactions and verify blockchain state through your own trusted daemon.",
+  "description": "Full validating Monero (XMR) node paired with a real-time visual web dashboard. Monitor sync progress, block height, network difficulty, and connected peers.",
   "opsec_level": "Level 3",
-  "web_port": 18081,
-  "onion_port": 18081,
-  "memory_mb": 2048,
+  "web_port": 18088,
+  "onion_port": 80,
+  "memory_mb": 2200,
   "icon": "monero"
 }
