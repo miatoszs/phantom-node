@@ -15,17 +15,28 @@ class SystemManager:
         self.repo_url = GITHUB_REPO_URL
 
     def _ensure_git_repo(self) -> bool:
-        """Ensures that base_dir has an initialized git repository tracking origin."""
-        git_dir = self.base_dir / ".git"
-        if not git_dir.exists():
-            try:
+        """Ensures that base_dir has an initialized git repository tracking origin with safe.directory."""
+        try:
+            # Mark directory as safe in git config to prevent dubious ownership errors
+            subprocess.run(
+                ["git", "config", "--global", "--add", "safe.directory", str(self.base_dir)],
+                capture_output=True
+            )
+            
+            git_dir = self.base_dir / ".git"
+            if not git_dir.exists():
                 subprocess.run(["git", "init", "-b", "main"], cwd=str(self.base_dir), check=True, capture_output=True)
+
+            # Check or configure remote origin
+            remotes = subprocess.run(["git", "remote"], cwd=str(self.base_dir), capture_output=True, text=True)
+            if "origin" not in remotes.stdout.split():
                 subprocess.run(["git", "remote", "add", "origin", self.repo_url], cwd=str(self.base_dir), check=True, capture_output=True)
-                return True
-            except Exception as e:
-                print(f"[SystemManager] Git init error: {e}")
-                return False
-        return True
+            else:
+                subprocess.run(["git", "remote", "set-url", "origin", self.repo_url], cwd=str(self.base_dir), check=True, capture_output=True)
+            return True
+        except Exception as e:
+            print(f"[SystemManager] Git init error: {e}")
+            return False
 
     def check_for_updates(self) -> Dict:
         """
@@ -35,7 +46,7 @@ class SystemManager:
         self._ensure_git_repo()
 
         try:
-            # 1. Fetch remote origin with a 12s timeout
+            # 1. Fetch remote origin with a 15s timeout
             fetch_res = subprocess.run(
                 ["git", "fetch", "origin", "main"],
                 cwd=str(self.base_dir),
@@ -43,6 +54,15 @@ class SystemManager:
                 text=True,
                 timeout=15
             )
+
+            if fetch_res.returncode != 0:
+                err_text = fetch_res.stderr.strip() or fetch_res.stdout.strip() or "Git fetch failed."
+                return {
+                    "success": False,
+                    "update_available": False,
+                    "current_version": self.version,
+                    "error": err_text
+                }
 
             # 2. Get local HEAD commit
             local_commit_res = subprocess.run(
@@ -52,7 +72,8 @@ class SystemManager:
                 text=True,
                 timeout=5
             )
-            local_commit = local_commit_res.stdout.strip() if local_commit_res.returncode == 0 else "unknown"
+            has_head = (local_commit_res.returncode == 0)
+            local_commit = local_commit_res.stdout.strip() if has_head else "untracked"
 
             # 3. Get remote origin/main commit
             remote_commit_res = subprocess.run(
@@ -62,41 +83,51 @@ class SystemManager:
                 text=True,
                 timeout=5
             )
-            remote_commit = remote_commit_res.stdout.strip() if remote_commit_res.returncode == 0 else local_commit
+            remote_commit = remote_commit_res.stdout.strip() if remote_commit_res.returncode == 0 else "unknown"
 
-            # 4. Count commits behind
-            count_res = subprocess.run(
-                ["git", "rev-list", "--count", "HEAD..origin/main"],
-                cwd=str(self.base_dir),
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            commits_behind = int(count_res.stdout.strip()) if count_res.returncode == 0 and count_res.stdout.strip().isdigit() else 0
-
-            # 5. Extract changelog (last 8 commits)
+            # 4. Count commits behind and extract changelog
             changelog = []
-            if commits_behind > 0:
-                log_res = subprocess.run(
-                    ["git", "log", "-n", "8", "--pretty=format:%h|%s|%cr", "HEAD..origin/main"],
+            if not has_head or local_commit == "untracked":
+                # Local repository has no committed HEAD - needs initial sync to origin/main
+                commits_behind = 1
+                update_available = True
+                changelog.append({
+                    "hash": remote_commit,
+                    "subject": "Initial synchronization with upstream GitHub",
+                    "time": "latest"
+                })
+            else:
+                count_res = subprocess.run(
+                    ["git", "rev-list", "--count", "HEAD..origin/main"],
                     cwd=str(self.base_dir),
                     capture_output=True,
                     text=True,
                     timeout=5
                 )
-                if log_res.returncode == 0 and log_res.stdout.strip():
-                    for line in log_res.stdout.strip().split("\n"):
-                        parts = line.split("|")
-                        if len(parts) >= 3:
-                            changelog.append({
-                                "hash": parts[0],
-                                "subject": parts[1],
-                                "time": parts[2]
-                            })
+                commits_behind = int(count_res.stdout.strip()) if count_res.returncode == 0 and count_res.stdout.strip().isdigit() else 0
+                update_available = (commits_behind > 0)
+
+                if commits_behind > 0:
+                    log_res = subprocess.run(
+                        ["git", "log", "-n", "8", "--pretty=format:%h|%s|%cr", "HEAD..origin/main"],
+                        cwd=str(self.base_dir),
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    if log_res.returncode == 0 and log_res.stdout.strip():
+                        for line in log_res.stdout.strip().split("\n"):
+                            parts = line.split("|")
+                            if len(parts) >= 3:
+                                changelog.append({
+                                    "hash": parts[0],
+                                    "subject": parts[1],
+                                    "time": parts[2]
+                                })
 
             return {
                 "success": True,
-                "update_available": commits_behind > 0,
+                "update_available": update_available,
                 "current_version": self.version,
                 "current_commit": local_commit,
                 "remote_commit": remote_commit,
@@ -127,14 +158,20 @@ class SystemManager:
 
         try:
             # 1. Fetch latest
-            subprocess.run(
+            fetch_res = subprocess.run(
                 ["git", "fetch", "origin", "main"],
                 cwd=str(self.base_dir),
                 capture_output=True,
                 text=True,
-                check=True,
+                check=False,
                 timeout=30
             )
+            if fetch_res.returncode != 0:
+                err_text = fetch_res.stderr.strip() or fetch_res.stdout.strip()
+                return {
+                    "success": False,
+                    "error": f"Failed to fetch updates from GitHub: {err_text}"
+                }
 
             # 2. Reset hard to origin/main (ensures clean sync without conflicts)
             subprocess.run(

@@ -97,13 +97,14 @@ if [ "${SOURCE_DIR}" != "${INSTALL_DIR}" ]; then
 fi
 
 # Ensure target directory is a valid git repository linked to origin for 1-click updates
+git config --global --add safe.directory "${INSTALL_DIR}" 2>/dev/null || true
 if [ ! -d "${INSTALL_DIR}/.git" ]; then
     (
         cd "${INSTALL_DIR}"
         git init -b main >/dev/null 2>&1 || git init >/dev/null 2>&1
         git remote add origin https://github.com/miatoszs/phantom-node.git 2>/dev/null || git remote set-url origin https://github.com/miatoszs/phantom-node.git
         git fetch origin main >/dev/null 2>&1 || true
-        git reset --mixed origin/main >/dev/null 2>&1 || true
+        git reset --hard origin/main >/dev/null 2>&1 || true
     ) || true
 fi
 

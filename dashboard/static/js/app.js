@@ -432,8 +432,24 @@ async function checkUpdates(manual = false) {
 
     try {
         const res = await fetch('/api/system/update');
-        if (!res.ok) throw new Error('API request failed');
-        const data = await res.json();
+        let data = {};
+        try {
+            data = await res.json();
+        } catch (_) {}
+
+        if (!res.ok || data.success === false) {
+            const errMsg = data.error || data.detail || (res.status === 404 ? 'Update API endpoint not found. Please restart phantom-dashboard service.' : 'Failed to verify updates with GitHub.');
+            if (statusMsg) {
+                statusMsg.innerHTML = `<span style="color:var(--accent-red);">${errMsg}</span>`;
+            }
+            if (remoteVer) {
+                remoteVer.innerText = 'offline';
+            }
+            if (manual) {
+                showToast(errMsg, 'error');
+            }
+            return;
+        }
 
         if (document.getElementById('update-current-ver')) {
             document.getElementById('update-current-ver').innerText = `v${data.current_version} (${data.current_commit || ''})`;
@@ -478,10 +494,13 @@ async function checkUpdates(manual = false) {
         }
     } catch (e) {
         if (statusMsg) {
-            statusMsg.innerText = 'Could not verify updates (offline or network error).';
+            statusMsg.innerText = e.message || 'Could not verify updates (network error).';
+        }
+        if (remoteVer) {
+            remoteVer.innerText = 'error';
         }
         if (manual) {
-            showToast('Unable to check for updates.', 'error');
+            showToast('Unable to check for updates: ' + (e.message || 'Network error'), 'error');
         }
     }
 }
