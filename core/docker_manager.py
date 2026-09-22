@@ -44,6 +44,20 @@ class DockerManager:
                     manifest["is_installed"] = self.is_app_installed(app_id)
                     manifest["is_running"] = self.is_app_running(app_id) if manifest["is_installed"] else False
                     manifest["onion"] = self.tor_manager.get_onion_address(app_id) if manifest["is_installed"] else None
+                    if manifest["is_installed"]:
+                        inst_m = self.installed_dir / app_id / "manifest.json"
+                        if inst_m.exists():
+                            try:
+                                with open(inst_m, "r", encoding="utf-8") as imf:
+                                    inst_data = json.load(imf)
+                                    if "web_port" in inst_data:
+                                        manifest["web_port"] = inst_data["web_port"]
+                                    if "onion_port" in inst_data:
+                                        manifest["onion_port"] = inst_data["onion_port"]
+                                    if "extra_ports" in inst_data:
+                                        manifest["extra_ports"] = inst_data["extra_ports"]
+                            except Exception:
+                                pass
                     catalog.append(manifest)
             except Exception as e:
                 print(f"[DockerManager] Error reading manifest {manifest_file}: {e}")
@@ -135,13 +149,39 @@ class DockerManager:
                     except (ValueError, TypeError):
                         pass
 
-            # Update docker-compose.yml with custom web port if modified
+            # Update docker-compose.yml with custom web port and extra ports if modified
             compose_file = target_dir / "docker-compose.yml"
-            if compose_file.exists() and default_web_port and web_port != default_web_port:
+            if compose_file.exists():
                 compose_content = compose_file.read_text(encoding="utf-8")
-                compose_content = compose_content.replace(f"127.0.0.1:{default_web_port}:", f"127.0.0.1:{web_port}:")
-                compose_content = compose_content.replace(f'"{default_web_port}:', f'"{web_port}:')
-                compose_file.write_text(compose_content, encoding="utf-8")
+                modified_compose = False
+
+                if default_web_port and web_port != default_web_port:
+                    compose_content = compose_content.replace(f"127.0.0.1:{default_web_port}:", f"127.0.0.1:{web_port}:")
+                    compose_content = compose_content.replace(f'"{default_web_port}:', f'"{web_port}:')
+                    compose_content = compose_content.replace(f"'{default_web_port}:", f"'{web_port}:")
+                    modified_compose = True
+
+                # Process extra ports overrides (e.g. Node RPC port, DNS port, VPN port)
+                extra_ports_cfg = custom_config.get("extra_ports") if custom_config else None
+                if extra_ports_cfg and isinstance(extra_ports_cfg, dict):
+                    for ep in manifest.get("extra_ports", []):
+                        ep_key = ep.get("key")
+                        def_val = ep.get("default")
+                        if ep_key in extra_ports_cfg:
+                            try:
+                                custom_val = int(extra_ports_cfg[ep_key])
+                                if custom_val != def_val:
+                                    compose_content = compose_content.replace(f"127.0.0.1:{def_val}:", f"127.0.0.1:{custom_val}:")
+                                    compose_content = compose_content.replace(f'"{def_val}:', f'"{custom_val}:')
+                                    compose_content = compose_content.replace(f"'{def_val}:", f"'{custom_val}:")
+                                    compose_content = compose_content.replace(f"WG_PORT={def_val}", f"WG_PORT={custom_val}")
+                                    modified_compose = True
+                                ep["default"] = custom_val
+                            except (ValueError, TypeError):
+                                pass
+
+                if modified_compose:
+                    compose_file.write_text(compose_content, encoding="utf-8")
 
             # Update installed manifest.json with effective ports
             installed_manifest_path = target_dir / "manifest.json"

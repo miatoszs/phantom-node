@@ -643,12 +643,42 @@ function openAdvancedInstallModal(appId, appName, defWebPort, defOnionPort) {
     const modal = document.getElementById('advanced-install-modal');
     if (!modal) return;
 
+    const app = appsData.find(a => a.id === appId);
+
     document.getElementById('adv-app-id').value = appId;
     document.getElementById('adv-install-title').innerText = `${appName} – Advanced Deployment`;
     document.getElementById('adv-install-subtitle').innerText = `Configure port routing, Tor onion bindings, and custom environment variables for ${appName}.`;
+
+    // Dynamic label for web port if specified (e.g. Dashboard Web Port vs Web Admin Console Port)
+    const webPortLabel = document.getElementById('adv-web-port-label');
+    if (webPortLabel) {
+        webPortLabel.innerText = (app && app.web_port_label) ? app.web_port_label.toUpperCase() : 'LOCAL WEB PORT';
+    }
+
     document.getElementById('adv-web-port').value = defWebPort || 80;
     document.getElementById('adv-onion-port').value = defOnionPort || 80;
     document.getElementById('adv-env-vars').value = '';
+
+    // Render extra service ports if defined in the manifest (e.g. Monero Node RPC/P2P, DNS, VPN)
+    const extraWrapper = document.getElementById('adv-extra-ports-wrapper');
+    const extraGrid = document.getElementById('adv-extra-ports-grid');
+    if (extraWrapper && extraGrid) {
+        extraGrid.innerHTML = '';
+        if (app && app.extra_ports && Array.isArray(app.extra_ports) && app.extra_ports.length > 0) {
+            extraWrapper.style.display = 'block';
+            app.extra_ports.forEach(ep => {
+                const col = document.createElement('div');
+                col.innerHTML = `
+                    <label style="display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.5px;">${ep.label.toUpperCase()}</label>
+                    <input type="number" class="adv-extra-port-input" data-key="${ep.key}" required min="1" max="65535" value="${ep.default}" style="width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 14px; font-family: monospace;">
+                    ${ep.description ? `<div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">${ep.description}</div>` : ''}
+                `;
+                extraGrid.appendChild(col);
+            });
+        } else {
+            extraWrapper.style.display = 'none';
+        }
+    }
 
     const submitBtn = document.getElementById('btn-adv-submit');
     if (submitBtn) {
@@ -677,6 +707,16 @@ async function submitAdvancedInstall(e) {
 
     if (!appId) return;
 
+    // Collect extra ports overrides (e.g. Node RPC, P2P, DNS, VPN)
+    const extraPorts = {};
+    document.querySelectorAll('.adv-extra-port-input').forEach(input => {
+        const key = input.dataset.key;
+        const val = parseInt(input.value, 10);
+        if (key && !isNaN(val)) {
+            extraPorts[key] = val;
+        }
+    });
+
     // Parse custom environment overrides into key=value mapping
     const customEnv = {};
     if (envRaw) {
@@ -702,6 +742,7 @@ async function submitAdvancedInstall(e) {
         const payload = {
             web_port: webPort,
             onion_port: onionPort,
+            extra_ports: Object.keys(extraPorts).length > 0 ? extraPorts : null,
             custom_env: Object.keys(customEnv).length > 0 ? customEnv : (envRaw.trim() ? envRaw.trim() : null)
         };
 

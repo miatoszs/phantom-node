@@ -5,7 +5,24 @@
   "description": "Full validating Monero (XMR) node paired with a real-time visual web dashboard. Monitor sync progress, block height, network difficulty, and connected peers.",
   "opsec_level": "Level 3",
   "web_port": 18088,
+  "web_port_label": "Dashboard Web Port",
   "onion_port": 80,
   "memory_mb": 2200,
-  "icon": "monero"
+  "icon": "monero",
+  "extra_ports": [
+    {
+      "key": "rpc_port",
+      "label": "Node RPC Port (Wallets)",
+      "default": 18081,
+      "protocol": "tcp",
+      "description": "Port used by wallet software (Feather, Monero GUI, CLI)"
+    },
+    {
+      "key": "p2p_port",
+      "label": "Node P2P Sync Port",
+      "default": 18080,
+      "protocol": "tcp",
+      "description": "Blockchain P2P network synchronization port"
+    }
+  ]
 }

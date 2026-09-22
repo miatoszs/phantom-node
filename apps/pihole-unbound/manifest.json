@@ -5,7 +5,17 @@
   "description": "Network-wide tracking & ad blocker paired with recursive DNS root resolver. Eliminates ISP DNS snooping and leak vectors.",
   "opsec_level": "Level 1",
   "web_port": 8053,
+  "web_port_label": "Web Admin Console Port",
   "onion_port": 80,
   "memory_mb": 384,
-  "icon": "pi-hole"
+  "icon": "pi-hole",
+  "extra_ports": [
+    {
+      "key": "dns_port",
+      "label": "DNS Server Port",
+      "default": 53,
+      "protocol": "udp",
+      "description": "Local DNS resolution listening port (53 or 5353)"
+    }
+  ]
 }

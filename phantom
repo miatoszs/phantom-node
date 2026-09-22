@@ -117,10 +117,11 @@ def cmd_app(args):
 
         if "--advanced" in args:
             manifest = docker_mgr.get_app_manifest(app_id) or {}
+            web_label = manifest.get("web_port_label", "Local Web Port")
             def_web = manifest.get("web_port", 80)
             def_onion = manifest.get("onion_port", 80)
             print(f"\n\033[1m--- Advanced Installation: {app_id} ---\033[0m")
-            in_port = input(f"Custom Local Web Port [{def_web}]: ").strip()
+            in_port = input(f"Custom {web_label} [{def_web}]: ").strip()
             if in_port:
                 try:
                     custom_config["web_port"] = int(in_port)
@@ -132,6 +133,23 @@ def cmd_app(args):
                     custom_config["onion_port"] = int(in_onion)
                 except ValueError:
                     pass
+
+            extra_ports = manifest.get("extra_ports", [])
+            if extra_ports:
+                custom_config["extra_ports"] = {}
+                for ep in extra_ports:
+                    ep_key = ep.get("key")
+                    ep_label = ep.get("label", ep_key)
+                    ep_def = ep.get("default")
+                    in_ep = input(f"Custom {ep_label} [{ep_def}]: ").strip()
+                    if in_ep:
+                        try:
+                            custom_config["extra_ports"][ep_key] = int(in_ep)
+                        except ValueError:
+                            pass
+                    else:
+                        custom_config["extra_ports"][ep_key] = ep_def
+
             print("Enter custom .env variables (empty line to finish):")
             env_lines = []
             while True:

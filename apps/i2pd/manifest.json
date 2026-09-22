@@ -5,7 +5,24 @@
   "description": "Lightweight C++ client for Invisible Internet Project (I2P). End-to-end encrypted peer-to-peer anonymous network for eepsites and decentralized hidden communication.",
   "opsec_level": "Level 3",
   "web_port": 7070,
+  "web_port_label": "Web Console Port",
   "onion_port": 7070,
   "memory_mb": 256,
-  "icon": "i2p"
+  "icon": "i2p",
+  "extra_ports": [
+    {
+      "key": "http_proxy_port",
+      "label": "HTTP Proxy Port",
+      "default": 4444,
+      "protocol": "tcp",
+      "description": "Local HTTP proxy for browsing .i2p eepsites"
+    },
+    {
+      "key": "socks_proxy_port",
+      "label": "SOCKS Proxy Port",
+      "default": 4447,
+      "protocol": "tcp",
+      "description": "Local SOCKS proxy for anonymous client routing"
+    }
+  ]
 }

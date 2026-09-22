@@ -41,6 +41,7 @@ class UsbToggleRequest(BaseModel):
 class AppInstallRequest(BaseModel):
     web_port: Optional[int] = None
     onion_port: Optional[int] = None
+    extra_ports: Optional[Dict[str, int]] = None
     custom_env: Optional[Union[Dict[str, str], str]] = None
 
 @app.get("/", response_class=FileResponse)

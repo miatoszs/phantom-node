@@ -5,7 +5,17 @@
   "description": "Network-wide ad, tracker, and telemetry blocker with encrypted DNS server (DoH, DoT, DoQ). Lightweight web management console with custom blocklists.",
   "opsec_level": "Level 1",
   "web_port": 3053,
+  "web_port_label": "Web Admin Console Port",
   "onion_port": 80,
   "memory_mb": 256,
-  "icon": "adguard-home"
+  "icon": "adguard-home",
+  "extra_ports": [
+    {
+      "key": "dns_port",
+      "label": "DNS Server Port",
+      "default": 5353,
+      "protocol": "udp",
+      "description": "Local DNS resolution listening port"
+    }
+  ]
 }

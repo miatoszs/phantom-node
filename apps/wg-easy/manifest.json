@@ -5,7 +5,17 @@
   "description": "Self-hosted, ultra-fast WireGuard VPN server with responsive Web UI. Generate QR codes and configuration profiles for laptops and mobile devices.",
   "opsec_level": "Level 2",
   "web_port": 51821,
+  "web_port_label": "VPN Web Admin Port",
   "onion_port": 80,
   "memory_mb": 128,
-  "icon": "wireguard"
+  "icon": "wireguard",
+  "extra_ports": [
+    {
+      "key": "vpn_port",
+      "label": "WireGuard Tunnel UDP Port",
+      "default": 51820,
+      "protocol": "udp",
+      "description": "UDP port for WireGuard client connections"
+    }
+  ]
 }
