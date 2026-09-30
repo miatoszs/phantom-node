@@ -328,3 +328,15 @@ body { background:radial-gradient(ellipse at 73% -10%,rgba(87,80,154,.18),transp
 #toast-container { right:26px; bottom:24px; }
 @media (max-width:900px) { .navbar { margin-left:68px; padding:0 22px; } .main-container { margin-left:68px; padding:34px 22px 50px; } .desktop-rail { width:68px; } }
 @media (max-width:620px) { .desktop-rail { display:none; } .navbar { margin-left:0; } .main-container { margin-left:0; padding:24px 15px 40px; } .welcome-row { padding:22px 18px; } .welcome-note { display:none; } }
+
+/* Use the full workspace; center the dashboard inside it on wide displays. */
+.navbar { padding-inline:clamp(24px,calc((100vw - 76px - 1680px)/2),280px); }
+.main-container { width:auto; max-width:none; margin:0 0 0 76px; padding:42px clamp(24px,calc((100vw - 76px - 1680px)/2),280px) 64px; }
+@media (max-width:900px) {
+  .navbar { margin-left:68px; padding-inline:22px; }
+  .main-container { width:auto; margin-left:68px; padding:32px 22px 48px; }
+}
+@media (max-width:620px) {
+  .navbar { margin-left:0; }
+  .main-container { margin-left:0; padding:24px 15px 40px; }
+}
