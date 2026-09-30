@@ -44,6 +44,14 @@ function initTabs() {
     });
 }
 
+function setDashboardTab(tab) {
+    const target = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+    if (target) target.click();
+    document.querySelectorAll('.rail-link[aria-label="Installed services"], .rail-link[aria-label="App store"]').forEach(link => {
+        link.classList.toggle('active', link.getAttribute('aria-label') === (tab === 'catalog' ? 'App store' : 'Installed services'));
+    });
+}
+
 async function fetchStatus() {
     try {
         const res = await fetch('/api/status');
