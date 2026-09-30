@@ -44,22 +44,6 @@ function initTabs() {
     });
 }
 
-function setDashboardTab(tab) {
-    currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(button => {
-        const active = button.dataset.tab === tab;
-        button.classList.toggle('active', active);
-        button.setAttribute('aria-pressed', String(active));
-    });
-    const searchInput = document.getElementById('app-search-input');
-    if (searchInput) searchInput.value = '';
-    updateCounters();
-    renderApps();
-    document.querySelectorAll('.rail-link[aria-label="Installed services"], .rail-link[aria-label="App store"]').forEach(link => {
-        link.classList.toggle('active', link.getAttribute('aria-label') === (tab === 'catalog' ? 'App store' : 'Installed services'));
-    });
-}
-
 async function fetchStatus() {
     try {
         const res = await fetch('/api/status');
