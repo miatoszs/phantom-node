@@ -1108,6 +1108,17 @@ function getClientGuide(appId, host, app) {
                 <div>• Ollama REST API: <code style="color:var(--accent-cyan);">http://${host}:${apiPort}</code> (OpenAI-compatible)</div>
             `;
         }
+        case 'deluge': {
+            const daemonPort = getPort('daemon_port', 58846);
+            const torrentPort = getPort('torrent_port', 6881);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Deluge Client & Web UI Setup:</strong></div>
+                <div style="margin-bottom: 4px;">• Web UI Console: <a href="http://${host}:${webPort}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">http://${host}:${webPort}</a> (Default password: <code>deluge</code>)</div>
+                <div style="margin-bottom: 4px;">• Thin Client Daemon RPC: <code style="color:var(--accent-cyan);">${host}:${daemonPort}</code> (Desktop GUI connection)</div>
+                <div style="margin-bottom: 4px;">• BitTorrent Peer Port: <code style="color:var(--accent-cyan);">${torrentPort}</code> (TCP / UDP)</div>
+                ${onion ? `<div>• Tor v3 Web Console: <code style="color:#c084fc;">${onion}</code></div>` : ''}
+            `;
+        }
         default:
             return `
                 <div style="margin-bottom: 4px;">• Local Service Endpoint: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>

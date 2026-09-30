@@ -1,0 +1,20 @@
+services:
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: phantom_deluge
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DELUGE_LOGLEVEL=error
+    volumes:
+      - ./config:/config
+      - ./downloads:/downloads
+    ports:
+      - "8112:8112"
+      - "58846:58846"
+      - "6881:6881"
+      - "6881:6881/udp"
+    security_opt:
+      - no-new-privileges:true

@@ -1,0 +1,28 @@
+{
+  "id": "deluge",
+  "name": "Deluge BitTorrent",
+  "category": "P2P & Torrents",
+  "description": "Lightweight, sovereign BitTorrent client with responsive Web UI and headless daemon. Support for remote desktop thin clients, proxy routing, and bandwidth scheduling.",
+  "opsec_level": "Level 1",
+  "web_port": 8112,
+  "web_port_label": "Deluge Web UI Port",
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "deluge",
+  "extra_ports": [
+    {
+      "key": "daemon_port",
+      "label": "Daemon RPC Port (Thin Client)",
+      "default": 58846,
+      "protocol": "tcp",
+      "description": "Port used by desktop Deluge thin clients and remote GUI management"
+    },
+    {
+      "key": "torrent_port",
+      "label": "Incoming BitTorrent Peer Port",
+      "default": 6881,
+      "protocol": "tcp",
+      "description": "Port used for BitTorrent swarm peer-to-peer data transfers (TCP/UDP)"
+    }
+  ]
+}

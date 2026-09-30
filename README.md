@@ -35,11 +35,12 @@
 
 ---
 
-## 📦 Built-In Privacy Application Catalog (18 Tools)
+## 📦 Built-In Privacy Application Catalog (19 Tools)
 
 | Application | Category | OPSEC Level | Description |
 | :--- | :--- | :--- | :--- |
 | **AdGuard Home** | Network & DNS | OPSEC Level 1 | Network-wide ad, tracker, and malware blocker with encrypted upstream DNS (DoH, DoT, DoQ). |
+| **Deluge BitTorrent** | P2P & Torrents | OPSEC Level 1 | Lightweight BitTorrent client with Web UI, headless daemon for desktop thin clients, and proxy support. |
 | **Monero Node & Dashboard** | Financial Privacy | OPSEC Level 3 | Full validating Monero (XMR) blockchain node with real-time web dashboard (block height, sync progress, peers). |
 | **Nextcloud Hub** | Cloud & Storage | OPSEC Level 2 | Self-hosted sovereign cloud storage, calendar, and contacts behind isolated Tor onion routing. |
 | **Vaultwarden** | Passwords & Auth | OPSEC Level 1 | Lightweight Bitwarden-compatible password vault written in Rust with zero-knowledge client encryption. |
