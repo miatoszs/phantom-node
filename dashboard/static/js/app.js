@@ -1119,10 +1119,19 @@ function getClientGuide(appId, host, app) {
                 ${onion ? `<div>• Tor v3 Web Console: <code style="color:#c084fc;">${onion}</code></div>` : ''}
             `;
         }
+        case 'dockge': {
+            return `
+                <div style="margin-bottom: 6px;"><strong>Dockge Compose Manager:</strong></div>
+                <div style="margin-bottom: 4px;">• Web Management Console: <a href="http://${host}:${webPort}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">http://${host}:${webPort}</a></div>
+                <div style="margin-bottom: 4px;">• Create your admin account upon first opening the console.</div>
+                <div>• Stacks directory is mounted at <code>./stacks</code> inside the Dockge folder.</div>
+                ${onion ? `<div style="margin-top: 4px;">• Tor v3 Web Console: <code style="color:#c084fc;">${onion}</code></div>` : ''}
+            `;
+        }
         default:
             return `
                 <div style="margin-bottom: 4px;">• Local Service Endpoint: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>
-                ${onion ? `<div>• Tor v3 Onion Service: <code style="color:#c084fc;">http://${onion}</code></div>` : ''}
+                ${onion ? `<div>• Tor v3 Onion Service: <code style="color:#c084fc;">${onion}</code></div>` : ''}
             `;
     }
 }

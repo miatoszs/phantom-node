@@ -1,0 +1,12 @@
+{
+  "id": "dockge",
+  "name": "Dockge",
+  "category": "System Admin",
+  "description": "Easy-to-use, reactive self-hosted Docker Compose manager. Create, edit, and monitor multi-container compose stacks with visual interactive web terminal.",
+  "opsec_level": "Level 1",
+  "web_port": 5001,
+  "web_port_label": "Dockge Web Console Port",
+  "onion_port": 80,
+  "memory_mb": 128,
+  "icon": "dockge"
+}
