@@ -22,6 +22,8 @@ const ICONS = {
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
+    const searchInput = document.getElementById('app-search-input');
+    if (searchInput) searchInput.addEventListener('input', renderApps);
     fetchStatus();
     fetchApps();
     setInterval(fetchStatus, 3000);
@@ -130,20 +132,21 @@ function renderApps() {
     const grid = document.getElementById('apps-grid');
     grid.innerHTML = '';
 
+    const query = (document.getElementById('app-search-input')?.value || '').trim().toLowerCase();
     const filtered = appsData.filter(app => {
-        if (currentTab === 'installed') return app.is_installed;
-        if (currentTab === 'catalog') return !app.is_installed;
-        return true;
+        const inTab = currentTab === 'installed' ? app.is_installed : currentTab === 'catalog' ? !app.is_installed : true;
+        const searchable = `${app.name} ${app.category} ${app.description}`.toLowerCase();
+        return inTab && (!query || searchable.includes(query));
     });
 
     if (filtered.length === 0) {
         grid.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 70px 20px; color: var(--text-muted);">
                 <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-                    ${currentTab === 'installed' ? 'No applications deployed yet.' : 'All available privacy tools are deployed!'}
+                    ${query ? 'No services match your search.' : currentTab === 'installed' ? 'No applications deployed yet.' : 'All available privacy tools are deployed!'}
                 </div>
                 <div style="font-size: 13px;">
-                    ${currentTab === 'installed' ? 'Switch to the Privacy App Store tab to deploy sovereign services with one click.' : 'Your sovereign stack is fully configured.'}
+                    ${query ? 'Try another name or category.' : currentTab === 'installed' ? 'Switch to the Privacy App Store tab to deploy sovereign services with one click.' : 'Your sovereign stack is fully configured.'}
                 </div>
             </div>
         `;
@@ -1135,4 +1138,3 @@ function getClientGuide(appId, host, app) {
             `;
     }
 }
-

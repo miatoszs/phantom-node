@@ -52,6 +52,18 @@
     <main class="main-container">
 
         <!-- Real-Time Hardware & Network Telemetry -->
+        <section class="welcome-row">
+            <div class="welcome-copy">
+                <div class="eyebrow"><span class="eyebrow-line"></span> PRIVATE BY DESIGN <span class="eyebrow-dot">/</span> YOUR SERVER</div>
+                <h1>Your private<br><span>corner of the internet.</span></h1>
+                <p>One calm place to run the services you trust. Your data stays yours.</p>
+            </div>
+            <div class="welcome-note">
+                <span class="note-mark">✳</span>
+                <div><strong>Good to have you here.</strong><span>Your home server, at a glance.</span></div>
+            </div>
+        </section>
+
         <section class="stats-grid">
             <div class="stat-card">
                 <div class="stat-header">
@@ -143,11 +155,17 @@
                     <span id="catalog-counter" class="tab-counter">0</span>
                 </button>
             </div>
-            <div id="installed-actions" style="display: flex; gap: 8px;">
+            <div class="view-tools">
+                <label class="app-search" for="app-search-input">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+                    <input id="app-search-input" type="search" placeholder="Find a service…" autocomplete="off">
+                </label>
+                <div id="installed-actions" style="display: flex; gap: 8px;">
                 <button class="btn btn-secondary" id="btn-update-all-apps" onclick="updateAllApps()" title="Pull latest Docker images and update all installed containers">
                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                     <span>Update All Containers</span>
                 </button>
+                </div>
             </div>
         </section>
 
