@@ -151,4 +151,3 @@ phantom update              # Download latest changes and restart services
 
 ## 🔒 Security & Operational Notice
 - PhantomNode OS is designed strictly for personal and business data sovereignty, legitimate privacy preservation, and cybersecurity defense.
-- Container configurations and network isolation mechanisms are built around the **4-Tier OPSEC Model**.
