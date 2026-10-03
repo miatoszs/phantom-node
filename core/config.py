@@ -3,12 +3,14 @@ from pathlib import Path
 
 # Base paths & Version
 PHANTOM_VERSION = "1.1.0"
-GITHUB_REPO_URL = "https://github.com/miatoszs/phantom-node.git"
+DEFAULT_REPO_URL = "https://github.com/miatoszs/phantom-node.git"
+GITHUB_REPO_URL = DEFAULT_REPO_URL
 BASE_DIR = Path(__file__).resolve().parent.parent
 APPS_DIR = BASE_DIR / "apps"
 DATA_DIR = Path(os.environ.get("PHANTOM_DATA_DIR", "/var/lib/phantom-node"))
 INSTALLED_APPS_DIR = DATA_DIR / "installed_apps"
 SCRIPTS_DIR = BASE_DIR / "scripts"
+UPDATE_MIRROR_FILE = DATA_DIR / "update_mirror.txt"
 
 # Tor configurations
 TORRC_FILE = Path("/etc/tor/torrc")

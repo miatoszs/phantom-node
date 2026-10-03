@@ -90,6 +90,7 @@ def show_help():
   \033[36mopsec disarm-usb\033[0m            Disarm the USB Dead Man's Switch
   \033[36mopsec panic\033[0m                 Trigger immediate emergency shutdown & cache drop
   \033[36mupdate [check]\033[0m              Check or apply 1-click PhantomNode OS updates
+  \033[36mupdate mirror [set|reset]\033[0m   Configure upstream update mirror (Tor .onion / GitLab)
     """)
 
 def cmd_status():
@@ -298,8 +299,63 @@ def cmd_opsec(args):
         show_help()
 
 def cmd_update(args):
-    if args and args[0] == "check":
-        print("[*] Checking for PhantomNode OS updates...")
+    if args and args[0] == "mirror":
+        mirror_args = args[1:]
+        if not mirror_args or mirror_args[0] in ["show", "get", "status"]:
+            curr = system_mgr.get_mirror_url()
+            is_onion = system_mgr.is_onion_url(curr)
+            is_default = (curr == system_mgr.default_repo_url)
+            tag = "\033[36m[Official GitHub]\033[0m" if is_default else "\033[35m[Custom Mirror]\033[0m"
+            onion_tag = " \033[33m(🧅 Routed via Tor SOCKS5)\033[0m" if is_onion else ""
+            print("\n\033[1m=== PhantomNode Update Mirror Configuration ===\033[0m\n")
+            print(f"  \033[1mCurrent Mirror:\033[0m {curr} {tag}{onion_tag}")
+            print(f"  \033[1mDefault Mirror:\033[0m {system_mgr.default_repo_url}\n")
+            print("  \033[1mCommands:\033[0m")
+            print("    phantom update mirror set <url>    - Set custom git mirror (Clearnet or Tor .onion)")
+            print("    phantom update mirror reset        - Reset mirror to official GitHub repository")
+            print("    phantom update mirror test         - Test connectivity to current mirror\n")
+            return
+
+        subcmd = mirror_args[0]
+        if subcmd == "set":
+            if len(mirror_args) < 2:
+                print("\033[31m[!] Please provide a repository URL: phantom update mirror set <url>\033[0m")
+                return
+            new_url = mirror_args[1]
+            print(f"[*] Configuring update mirror to: {new_url}...")
+            if system_mgr.is_onion_url(new_url):
+                print("    \033[35m[+] Tor .onion address detected! Traffic will be routed via SOCKS5 proxy.\033[0m")
+            res = system_mgr.set_mirror_url(new_url)
+            if res.get("success"):
+                print(f"\033[32m[+] {res.get('message')}\033[0m")
+                conn = res.get("connection_test", {})
+                if conn.get("reachable"):
+                    print(f"    \033[32m[+] {conn.get('message')}\033[0m")
+                else:
+                    print(f"    \033[33m[*] {conn.get('message')}\033[0m")
+            else:
+                print(f"\033[31m[!] Failed to set mirror: {res.get('error')}\033[0m")
+
+        elif subcmd == "reset":
+            res = system_mgr.reset_mirror_url()
+            print(f"\033[32m[+] {res.get('message')}\033[0m")
+
+        elif subcmd == "test":
+            curr = system_mgr.get_mirror_url()
+            print(f"[*] Testing connection to: {curr}...")
+            test_res = system_mgr._test_mirror_connection(curr)
+            if test_res.get("reachable"):
+                print(f"\033[32m[+] {test_res.get('message')}\033[0m")
+            else:
+                print(f"\033[31m[!] {test_res.get('message')}\033[0m")
+        else:
+            print(f"\033[31m[!] Unknown mirror subcommand: {subcmd}. Use: show, set, reset, test\033[0m")
+        return
+
+    elif args and args[0] == "check":
+        mirror = system_mgr.get_mirror_url()
+        onion_note = " (over Tor)" if system_mgr.is_onion_url(mirror) else ""
+        print(f"[*] Checking for PhantomNode OS updates from {mirror}{onion_note}...")
         res = system_mgr.check_for_updates()
         if not res.get("success"):
             print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
@@ -314,7 +370,9 @@ def cmd_update(args):
         else:
             print(f"\033[32m[+] PhantomNode OS is up to date (commit {res.get('current_commit')}).\033[0m")
     else:
-        print("[*] Checking for PhantomNode OS updates...")
+        mirror = system_mgr.get_mirror_url()
+        onion_note = " (over Tor)" if system_mgr.is_onion_url(mirror) else ""
+        print(f"[*] Checking for PhantomNode OS updates from {mirror}{onion_note}...")
         check = system_mgr.check_for_updates()
         if not check.get("success"):
             print(f"\033[31m[!] Error: {check.get('error')}\033[0m")

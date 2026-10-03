@@ -372,7 +372,7 @@
                 <div class="modal-title">System Software Update</div>
             </div>
             <p class="modal-subtitle">
-                1-Click OTA updates directly from the official GitHub repository. Upgrades core engines, UI components, and application manifests seamlessly.
+                1-Click OTA updates directly from upstream Git repositories. Supports official GitHub as well as custom GitLab, Forgejo, or Gitea mirrors hosted over clearnet or Tor (.onion).
             </p>
 
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 18px;">
@@ -380,9 +380,35 @@
                     <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">INSTALLED VERSION</span>
                     <span id="update-current-ver" class="tag-badge tag-ram" style="font-family: monospace;">v1.1.0</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">UPSTREAM REPO</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">REMOTE COMMIT</span>
                     <span id="update-remote-ver" class="tag-badge tag-opsec-2" style="font-family: monospace;">Checking...</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                    <span style="font-size: 13px; color: var(--text-muted); font-weight: 600; white-space: nowrap;">UPDATE MIRROR</span>
+                    <div style="text-align: right; max-width: 70%; word-break: break-all;">
+                        <div id="update-mirror-url" style="font-size: 12px; font-family: monospace; color: var(--text-main); margin-bottom: 4px;">Loading...</div>
+                        <span id="update-mirror-badge" class="tag-badge" style="font-size: 10px; background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan);">Official GitHub</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Mirror / Tor .onion Configuration Box -->
+            <div style="margin-bottom: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Update Mirror (Custom / Tor .onion)</label>
+                    <button type="button" class="btn btn-secondary" onclick="toggleMirrorEdit()" id="btn-toggle-mirror" style="padding: 4px 10px; font-size: 11px;">Configure</button>
+                </div>
+                <div id="mirror-edit-box" style="display: none; background: #080c14; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px;">
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+                        Host your own GitLab, Forgejo, or Gitea mirror of PhantomNode OS over clearnet or Tor. Enter any Git repository URL (e.g. <code>http://[onion-address].onion/...</code>). Tor addresses are automatically routed through Tor SOCKS5 proxy.
+                    </p>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <input type="text" id="input-mirror-url" class="form-control" placeholder="https://gitlab.example.com/... or http://xyz.onion/repo.git" style="flex: 1; font-family: monospace; font-size: 12px; padding: 7px 10px; background: #030712; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+                        <button class="btn btn-primary" onclick="saveCustomMirror()" id="btn-save-mirror" style="padding: 7px 14px; font-size: 12px;">Save</button>
+                        <button class="btn btn-secondary" onclick="resetDefaultMirror()" id="btn-reset-mirror" title="Reset to official GitHub repository" style="padding: 7px 12px; font-size: 12px;">Reset</button>
+                    </div>
+                    <div id="mirror-test-msg" style="font-size: 11px; color: var(--text-muted);"></div>
                 </div>
             </div>
 

@@ -172,3 +172,31 @@ async def apply_system_update():
     if not res.get("success"):
         raise HTTPException(status_code=500, detail=res.get("error", "Update application failed."))
     return res
+
+class MirrorRequest(BaseModel):
+    mirror_url: str
+
+@app.get("/api/system/mirror")
+async def get_system_mirror():
+    """Returns current update mirror configuration."""
+    mirror_url = system_mgr.get_mirror_url()
+    return {
+        "success": True,
+        "mirror_url": mirror_url,
+        "default_url": system_mgr.default_repo_url,
+        "is_onion": system_mgr.is_onion_url(mirror_url),
+        "is_custom": (mirror_url != system_mgr.default_repo_url)
+    }
+
+@app.post("/api/system/mirror")
+async def set_system_mirror(req: MirrorRequest):
+    """Sets a custom git mirror URL (supports Tor .onion and Clearnet)."""
+    res = system_mgr.set_mirror_url(req.mirror_url)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "Failed to update mirror."))
+    return res
+
+@app.post("/api/system/mirror/reset")
+async def reset_system_mirror():
+    """Resets the update mirror to the official GitHub repository."""
+    return system_mgr.reset_mirror_url()
