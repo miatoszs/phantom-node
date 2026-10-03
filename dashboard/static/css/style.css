@@ -247,6 +247,8 @@ body { background:radial-gradient(ellipse at 73% -10%,rgba(87,80,154,.18),transp
 .badge-red { background:#302021; color:#ff9991; border-color:#4c3032; }
 .badge-interactive { background:#211f2b; color:#c0b4ef; border-color:#363144; }
 .badge-interactive:hover { background:#2b2738; }
+.suggestion-button { background:#202a3a; color:#c4d5ff; border-color:#374862; text-decoration:none; }
+.suggestion-button:hover { background:#2a3950; color:#e2eaff; border-color:#536b8f; transform:translateY(-1px); }
 .main-container { max-width:1230px; margin:0 auto 0 76px; padding:44px 38px 64px; }
 .welcome-row { align-items:center; min-height:166px; margin-bottom:26px; padding:26px 28px; border:1px solid #292d3a; border-radius:20px; background:radial-gradient(ellipse at 80% 12%,rgba(117,98,200,.24),transparent 37%),linear-gradient(105deg,rgba(27,33,43,.97),rgba(23,26,38,.94)); box-shadow:0 15px 40px rgba(0,0,0,.15); overflow:hidden; position:relative; }
 .welcome-row::after { content:""; position:absolute; width:250px; height:250px; right:19%; top:-158px; border:1px solid rgba(181,169,255,.1); border-radius:50%; box-shadow:0 0 0 30px rgba(181,169,255,.025),0 0 0 65px rgba(181,169,255,.018); pointer-events:none; }
@@ -328,5 +330,6 @@ body { background:radial-gradient(ellipse at 73% -10%,rgba(87,80,154,.18),transp
 }
 @media (max-width:620px) {
   .navbar { margin-left:0; }
+  .nav-badges { flex-wrap:wrap; }
   .main-container { margin-left:0; padding:24px 15px 40px; }
 }

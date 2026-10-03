@@ -1,0 +1,35 @@
+name: App request
+description: Request a self-hosted app for the PhantomNode catalog
+title: "[App request]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Suggest an app you'd like to run on PhantomNode. Please don't include passwords, onion keys, or other private information."
+  - type: input
+    id: app-name
+    attributes:
+      label: App name
+      placeholder: e.g. Jellyfin
+    validations:
+      required: true
+  - type: input
+    id: project-url
+    attributes:
+      label: Official project URL
+      placeholder: https://
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What would you use it for?
+      description: Tell us why this app would be useful to PhantomNode users.
+    validations:
+      required: true
+  - type: textarea
+    id: privacy-notes
+    attributes:
+      label: Privacy or deployment considerations
+      description: Anything about data handling, network access, or setup we should know?
+    validations:
+      required: false
