@@ -1,0 +1,28 @@
+name: OS improvement
+description: Suggest an improvement to PhantomNode OS
+title: "[Suggestion]: "
+body:
+  - type: markdown
+    attributes:
+      value: "Share an idea to improve PhantomNode. Please don't include passwords, onion keys, or other private information."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What could be improved?
+      description: Describe the problem or opportunity.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Describe your proposed change and who it would help.
+    validations:
+      required: true
+  - type: textarea
+    id: extra-context
+    attributes:
+      label: Additional context
+      description: Add examples or screenshots if they help explain the idea.
+    validations:
+      required: false
