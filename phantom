@@ -10,23 +10,51 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
-# Ensure execution in isolated venv if installed
-venv_py = Path("/opt/phantom-node/venv/bin/python3")
-if venv_py.exists() and sys.executable != str(venv_py.resolve()):
+# Ensure execution in isolated venv if installed (with recursion guard)
+venv_dir = Path("/opt/phantom-node/venv")
+venv_py = venv_dir / "bin" / "python3"
+if (
+    venv_py.exists()
+    and sys.prefix != str(venv_dir)
+    and os.environ.get("PHANTOM_VENV_EXEC") != "1"
+):
     try:
+        os.environ["PHANTOM_VENV_EXEC"] = "1"
         os.execv(str(venv_py), [str(venv_py)] + sys.argv)
     except Exception:
         pass
 
-from core.docker_manager import DockerManager
-from core.tor_manager import TorManager
-from core.opsec_manager import OpsecManager
-from core.system_manager import SystemManager
+class LazyManager:
+    """Lazy-loads core managers only on demand so CLI commands start instantly."""
+    def __init__(self, loader):
+        self._loader = loader
+        self._instance = None
 
-docker_mgr = DockerManager()
-tor_mgr = TorManager()
-opsec_mgr = OpsecManager()
-system_mgr = SystemManager()
+    def __getattr__(self, name):
+        if self._instance is None:
+            self._instance = self._loader()
+        return getattr(self._instance, name)
+
+def _init_docker():
+    from core.docker_manager import DockerManager
+    return DockerManager()
+
+def _init_tor():
+    from core.tor_manager import TorManager
+    return TorManager()
+
+def _init_opsec():
+    from core.opsec_manager import OpsecManager
+    return OpsecManager()
+
+def _init_system():
+    from core.system_manager import SystemManager
+    return SystemManager()
+
+docker_mgr = LazyManager(_init_docker)
+tor_mgr = LazyManager(_init_tor)
+opsec_mgr = LazyManager(_init_opsec)
+system_mgr = LazyManager(_init_system)
 
 def print_banner():
     print("""

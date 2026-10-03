@@ -18,10 +18,6 @@ class DockerManager:
         self.apps_dir = APPS_DIR
         self.installed_dir = INSTALLED_APPS_DIR
         self.tor_manager = TorManager()
-        try:
-            self.fix_installed_port_bindings()
-        except Exception as e:
-            print(f"[DockerManager] Notice: fix_installed_port_bindings exception: {e}")
 
     def is_docker_running(self) -> bool:
         """Verifies if Docker daemon is responsive."""
