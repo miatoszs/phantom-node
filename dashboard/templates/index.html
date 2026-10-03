@@ -8,6 +8,62 @@
 </head>
 <body>
 
+    <!-- Tor Browser / NoScript Alert Popup (Appears only when JavaScript is disabled) -->
+    <noscript>
+        <style>
+            .tor-noscript-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(4, 7, 12, 0.96); z-index: 99999999; display: flex; align-items: center; justify-content: center; padding: 24px; overflow-y: auto; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+            .tor-noscript-modal { background: #10151f; border: 1px solid rgba(168, 85, 247, 0.45); border-radius: 20px; max-width: 600px; width: 100%; padding: 32px; box-shadow: 0 25px 70px rgba(0, 0, 0, 0.85), 0 0 35px rgba(168, 85, 247, 0.2); color: #e2e8f0; text-align: left; }
+            .tor-noscript-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+            .tor-noscript-icon-box { width: 52px; height: 52px; border-radius: 14px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); color: #c084fc; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .tor-noscript-title { font-size: 20px; font-weight: 800; color: #ffffff; letter-spacing: -0.3px; margin: 0 0 4px 0; }
+            .tor-noscript-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: rgba(234, 179, 8, 0.15); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.3); text-transform: uppercase; letter-spacing: 0.5px; }
+            .tor-noscript-desc { font-size: 14px; line-height: 1.6; color: #cbd5e1; margin: 0 0 18px 0; }
+            .tor-noscript-steps { background: #090d16; border: 1px solid #1e293b; border-left: 4px solid #a855f7; border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+            .tor-noscript-step-title { font-size: 13px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+            .tor-noscript-list { margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8; color: #94a3b8; }
+            .tor-noscript-list strong { color: #f1f5f9; }
+            .tor-noscript-list kbd { background: #1e293b; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-family: monospace; border: 1px solid #334155; }
+            .tor-noscript-opsec-notice { background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 10px; padding: 12px 16px; font-size: 12px; line-height: 1.5; color: #86efac; }
+            .tor-noscript-opsec-notice strong { color: #4ade80; }
+        </style>
+        <div class="tor-noscript-overlay">
+            <div class="tor-noscript-modal">
+                <div class="tor-noscript-header">
+                    <div class="tor-noscript-icon-box">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="tor-noscript-title">JavaScript Required</h2>
+                        <span class="tor-noscript-badge">Tor Browser / NoScript Notice</span>
+                    </div>
+                </div>
+
+                <p class="tor-noscript-desc">
+                    You are viewing PhantomNode OS with <strong>JavaScript disabled</strong>. In Tor Browser, this happens automatically when the Security Level is set to <em>"Safest"</em>.
+                </p>
+
+                <div class="tor-noscript-steps">
+                    <div class="tor-noscript-step-title">How to enable JavaScript in Tor Browser for this site:</div>
+                    <ol class="tor-noscript-list">
+                        <li>Click the <strong>Shield icon</strong> (🛡️) at the top-right of the Tor Browser address bar.</li>
+                        <li>Click <strong>"Settings..."</strong> (Change Security Level).</li>
+                        <li>Switch your Security Level from <strong>"Safest"</strong> to <strong>"Standard"</strong> or <strong>"Safer"</strong>.</li>
+                        <li><em>Or via NoScript extension:</em> Click the <strong>NoScript (S+)</strong> icon in your toolbar and select <strong>"Trust this site"</strong> or <strong>"Temporarily allow all on this page"</strong>.</li>
+                        <li>Reload this page (<kbd>F5</kbd> or <kbd>Ctrl+R</kbd>).</li>
+                    </ol>
+                </div>
+
+                <div class="tor-noscript-opsec-notice">
+                    🔒 <strong>100% Zero-Tracking OPSEC Guarantee:</strong>
+                    PhantomNode OS is completely self-hosted on your machine or private Tor v3 onion service. It contains <strong>zero third-party CDNs, zero analytics trackers, and zero remote telemetry</strong>. All scripts run entirely within your local instance.
+                </div>
+            </div>
+        </div>
+    </noscript>
+
     <!-- Top Navigation Bar -->
     <header class="navbar">
         <a href="/" class="brand">
