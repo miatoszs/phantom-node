@@ -220,6 +220,29 @@ class SystemManager:
             except Exception as eh:
                 print(f"[SystemManager] Hardening notice: {eh}")
 
+            try:
+                welcome_script = self.base_dir / "scripts" / "phantom-welcome.sh"
+                if welcome_script.exists():
+                    shutil.copy(str(welcome_script), "/etc/profile.d/phantom-welcome.sh")
+                    os.chmod("/etc/profile.d/phantom-welcome.sh", 0o755)
+                    hook = "\n# PhantomNode OS Welcome Banner\nif [ -f /etc/profile.d/phantom-welcome.sh ]; then\n    . /etc/profile.d/phantom-welcome.sh\nfi\n"
+                    for bashrc_file in ["/etc/bash.bashrc", "/root/.bashrc"]:
+                        bp = Path(bashrc_file)
+                        if bp.exists():
+                            content = bp.read_text(encoding="utf-8", errors="ignore")
+                            if "phantom-welcome.sh" not in content:
+                                with open(bp, "a", encoding="utf-8") as f:
+                                    f.write(hook)
+                    for udir in Path("/home").glob("*"):
+                        user_bashrc = udir / ".bashrc"
+                        if user_bashrc.exists():
+                            content = user_bashrc.read_text(encoding="utf-8", errors="ignore")
+                            if "phantom-welcome.sh" not in content:
+                                with open(user_bashrc, "a", encoding="utf-8") as f:
+                                    f.write(hook)
+            except Exception as ew:
+                print(f"[SystemManager] Welcome banner setup notice: {ew}")
+
             # 6. Schedule daemon restart in 1.5 seconds so API response finishes cleanly
             restart_cmd = "sleep 1.5 && systemctl restart phantom-dashboard.service"
             subprocess.Popen(["bash", "-c", restart_cmd])
