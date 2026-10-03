@@ -583,12 +583,39 @@ async function checkUpdates(manual = false) {
             remoteVer.innerText = data.remote_commit ? `origin/main (${data.remote_commit})` : 'online';
         }
 
+        // Update mirror info
+        const mirrorUrlEl = document.getElementById('update-mirror-url');
+        const mirrorBadgeEl = document.getElementById('update-mirror-badge');
+        const inputMirrorEl = document.getElementById('input-mirror-url');
+        if (mirrorUrlEl && data.mirror_url) {
+            mirrorUrlEl.innerText = data.mirror_url;
+            if (inputMirrorEl && !inputMirrorEl.value) {
+                inputMirrorEl.value = data.mirror_url;
+            }
+        }
+        if (mirrorBadgeEl) {
+            if (data.is_onion) {
+                mirrorBadgeEl.innerHTML = '🧅 Tor .onion Mirror';
+                mirrorBadgeEl.style.background = 'rgba(168, 85, 247, 0.2)';
+                mirrorBadgeEl.style.color = '#c084fc';
+            } else if (data.is_custom_mirror) {
+                mirrorBadgeEl.innerHTML = 'Custom Mirror';
+                mirrorBadgeEl.style.background = 'rgba(234, 179, 8, 0.2)';
+                mirrorBadgeEl.style.color = '#fde047';
+            } else {
+                mirrorBadgeEl.innerHTML = 'Official GitHub';
+                mirrorBadgeEl.style.background = 'rgba(56, 189, 248, 0.15)';
+                mirrorBadgeEl.style.color = 'var(--accent-cyan)';
+            }
+        }
+
         if (data.update_available) {
             if (badgeText) {
                 badgeText.innerHTML = `<span class="status-dot active" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></span> Update Ready`;
             }
             if (statusMsg) {
-                statusMsg.innerHTML = `<strong style="color:var(--accent-amber);">${data.commits_behind} new update(s) available from GitHub.</strong>`;
+                const srcLabel = data.is_onion ? 'Tor mirror' : (data.is_custom_mirror ? 'custom mirror' : 'GitHub');
+                statusMsg.innerHTML = `<strong style="color:var(--accent-amber);">${data.commits_behind} new update(s) available from ${srcLabel}.</strong>`;
             }
             if (changelogWrap && changelog && data.changelog && data.changelog.length > 0) {
                 changelogWrap.style.display = 'block';
@@ -627,6 +654,110 @@ async function checkUpdates(manual = false) {
         if (manual) {
             showToast('Unable to check for updates: ' + (e.message || 'Network error'), 'error');
         }
+    }
+}
+
+function toggleMirrorEdit() {
+    const box = document.getElementById('mirror-edit-box');
+    const btn = document.getElementById('btn-toggle-mirror');
+    if (!box) return;
+    if (box.style.display === 'none' || !box.style.display) {
+        box.style.display = 'block';
+        if (btn) btn.innerText = 'Hide';
+        const currMirror = document.getElementById('update-mirror-url')?.innerText;
+        const input = document.getElementById('input-mirror-url');
+        if (input && currMirror && currMirror !== 'Loading...') {
+            input.value = currMirror;
+        }
+    } else {
+        box.style.display = 'none';
+        if (btn) btn.innerText = 'Configure';
+    }
+}
+
+async function saveCustomMirror() {
+    const input = document.getElementById('input-mirror-url');
+    const msgEl = document.getElementById('mirror-test-msg');
+    const saveBtn = document.getElementById('btn-save-mirror');
+    if (!input || !input.value.trim()) {
+        showToast('Please enter a valid Git mirror URL.', 'error');
+        return;
+    }
+    const url = input.value.trim();
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = 'Saving...';
+    }
+    if (msgEl) {
+        msgEl.innerHTML = '<span style="color:var(--text-dim);">Saving mirror configuration and testing connectivity...</span>';
+    }
+
+    try {
+        const res = await fetch('/api/system/mirror', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mirror_url: url })
+        });
+        const data = await res.json();
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'Save';
+        }
+        if (!res.ok || data.success === false) {
+            const err = data.detail || data.error || 'Failed to update mirror.';
+            if (msgEl) msgEl.innerHTML = `<span style="color:var(--accent-red);">${err}</span>`;
+            showToast(err, 'error');
+            return;
+        }
+
+        const connMsg = data.connection_test ? data.connection_test.message : '';
+        const isReachable = data.connection_test ? data.connection_test.reachable : true;
+        const color = isReachable ? 'var(--accent-green)' : 'var(--accent-amber)';
+        if (msgEl) {
+            msgEl.innerHTML = `<span style="color:${color};">✓ Mirror configured! ${connMsg}</span>`;
+        }
+        showToast('Update mirror successfully saved.', 'success');
+        checkUpdates(true);
+    } catch (e) {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = 'Save';
+        }
+        if (msgEl) msgEl.innerHTML = `<span style="color:var(--accent-red);">${e.message || 'Network error'}</span>`;
+        showToast(e.message || 'Failed to update mirror.', 'error');
+    }
+}
+
+async function resetDefaultMirror() {
+    const msgEl = document.getElementById('mirror-test-msg');
+    const resetBtn = document.getElementById('btn-reset-mirror');
+    const input = document.getElementById('input-mirror-url');
+    if (resetBtn) {
+        resetBtn.disabled = true;
+        resetBtn.innerText = 'Resetting...';
+    }
+
+    try {
+        const res = await fetch('/api/system/mirror/reset', { method: 'POST' });
+        const data = await res.json();
+        if (resetBtn) {
+            resetBtn.disabled = false;
+            resetBtn.innerText = 'Reset';
+        }
+        if (data.mirror_url && input) {
+            input.value = data.mirror_url;
+        }
+        if (msgEl) {
+            msgEl.innerHTML = `<span style="color:var(--accent-green);">✓ Mirror reset to official GitHub repository.</span>`;
+        }
+        showToast('Update mirror reset to official GitHub.', 'success');
+        checkUpdates(true);
+    } catch (e) {
+        if (resetBtn) {
+            resetBtn.disabled = false;
+            resetBtn.innerText = 'Reset';
+        }
+        showToast('Failed to reset mirror.', 'error');
     }
 }
 

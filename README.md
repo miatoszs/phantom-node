@@ -152,10 +152,24 @@ phantom opsec arm-usb       # Arm the USB Dead Man's Switch
 phantom opsec disarm-usb    # Disarm USB defense
 phantom opsec panic         # Trigger immediate emergency shutdown & memory flush
 
-# System OTA Updates
-phantom update check        # Check for upstream releases on GitHub
+# System OTA Updates & Custom Tor Mirrors
+phantom update check        # Check for upstream releases
 phantom update              # Download latest changes and restart services
+phantom update mirror       # Show current upstream git mirror
+phantom update mirror set <url>   # Set custom git mirror (e.g. self-hosted GitLab over Tor .onion)
+phantom update mirror reset       # Reset mirror to official GitHub repository
+phantom update mirror test        # Test connectivity to the current mirror
 ```
+
+### 🧅 Self-Hosting Your Own Update Mirror Over Tor (.onion)
+Operators who prefer zero connection to GitHub can mirror the PhantomNode repository to an independent GitLab, Gitea, or Forgejo instance hosted over Tor:
+1. Mirror `https://github.com/miatoszs/phantom-node.git` to your private server.
+2. Expose the git service via a Tor v3 Hidden Service (e.g. `http://[your-onion-address].onion/user/phantom-node.git`).
+3. Set your node's update mirror via CLI or Web Dashboard:
+   ```bash
+   phantom update mirror set http://[your-onion-address].onion/user/phantom-node.git
+   ```
+4. PhantomNode OS will automatically route all Git update traffic, diff inspections, and commit pulls through the local Tor SOCKS5 proxy (`socks5h://127.0.0.1:9050`).
 
 ---
 
