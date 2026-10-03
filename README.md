@@ -63,23 +63,29 @@
 
 ---
 
-## 🚀 Quick Installation (Debian 12 / Kicksecure)
+## 🚀 1-Command Turnkey Installation (Debian 12 / Kicksecure)
 
-On a clean installation of **Debian 12 Minimal** or **Kicksecure**, run the following commands:
+Deploy **PhantomNode OS** on any clean installation of **Debian 12 Minimal** or **Kicksecure** with a single command:
 
 ```bash
-git clone https://github.com/miatoszs/phantom-node.git
-cd phantom-node
-sudo ./install.sh
+curl -fsSL https://raw.githubusercontent.com/miatoszs/phantom-node/main/install.sh | sudo bash
 ```
 
+> **Manual Git Clone Option:**
+> ```bash
+> git clone https://github.com/miatoszs/phantom-node.git
+> cd phantom-node
+> sudo ./install.sh
+> ```
+
 ### What the installer automatically configures:
-1. Installs Docker Engine, Docker Compose plugin, and Tor daemon.
-2. Creates an isolated Python virtual environment and sets up the asynchronous FastAPI Web Dashboard.
-3. Automatically provisions the Master Dashboard Tor v3 Hidden Service (`.onion`).
-4. Applies strict kernel sysctl hardening and configures the UFW firewall.
-5. Registers and enables `phantom-dashboard.service` under systemd.
-6. Displays the local LAN dashboard URL (`http://<LAN_IP>:7426`) and the private Master `.onion` address.
+1. **System Dependencies & Docker:** Installs Docker Engine, Docker Compose plugin, Tor daemon, UFW, and anti-forensics utilities.
+2. **PhantomNode Core:** Clones and provisions `/opt/phantom-node` with an isolated Python virtual environment.
+3. **Tor v3 Engine:** Automatically creates and provisions the Master Dashboard Tor v3 Hidden Service (`.onion`).
+4. **Kernel Hardening & WAN Shield:** Applies strict `sysctl` anti-forensics hardening and locks down UFW.
+5. **Systemd Automation:** Registers and enables `phantom-dashboard.service` for instant startup.
+6. **Interactive SSH & Login Banner:** Configures `/etc/profile.d/phantom-welcome.sh` and bashrc hooks so every SSH connection immediately displays the host IP, dashboard port (`7426`), onion URL, and system telemetry.
+7. **Post-Install Summary:** Prints the host IP address, dashboard port, and onion link upon completion.
 
 ---
 
@@ -111,6 +117,9 @@ Full command-line system management is available directly from the terminal:
 ```bash
 # View system health, Tor status, and active containers
 phantom status
+
+# Show the interactive welcome banner with dashboard IP, port, and system metrics
+phantom welcome
 
 # List all available catalog apps and their installation status
 phantom app list

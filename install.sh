@@ -12,6 +12,7 @@ C_PURPLE='\033[1;35m'
 C_GREEN='\033[1;32m'
 C_RED='\033[1;31m'
 C_YELLOW='\033[1;33m'
+C_WHITE='\033[1;37m'
 C_RESET='\033[0m'
 
 print_banner() {
@@ -32,7 +33,7 @@ print_banner
 
 # Step 0: Privilege check
 if [ "$EUID" -ne 0 ]; then
-    echo -e "${C_RED}[!] Error: Please run this installer with root privileges (sudo ./install.sh).${C_RESET}"
+    echo -e "${C_RED}[!] Error: Please run this installer with root privileges (sudo bash install.sh).${C_RESET}"
     exit 1
 fi
 
@@ -80,20 +81,41 @@ fi
 # Step 3: Deploy PhantomNode Core to /opt/phantom-node
 INSTALL_DIR="/opt/phantom-node"
 DATA_DIR="/var/lib/phantom-node"
-SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo -e "${C_CYAN}[3/8] Deploying PhantomNode to ${INSTALL_DIR}...${C_RESET}"
 mkdir -p "${INSTALL_DIR}"
 mkdir -p "${DATA_DIR}/installed_apps"
 
-# Copy files if installing from external source folder, excluding any pre-existing venv or cache
-if [ "${SOURCE_DIR}" != "${INSTALL_DIR}" ]; then
-    if command -v rsync >/dev/null 2>&1; then
-        rsync -a --exclude 'venv' --exclude '__pycache__' --exclude '.git' "${SOURCE_DIR}/" "${INSTALL_DIR}/"
-    else
-        cp -r "${SOURCE_DIR}"/* "${INSTALL_DIR}/"
+# Determine if running from an existing cloned repository
+SOURCE_DIR=""
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "bash" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+    POTENTIAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "${POTENTIAL_DIR}/phantom" ] && [ -d "${POTENTIAL_DIR}/core" ]; then
+        SOURCE_DIR="${POTENTIAL_DIR}"
     fi
-    rm -rf "${INSTALL_DIR}/venv"
+fi
+
+if [ -n "${SOURCE_DIR}" ]; then
+    echo -e "${C_YELLOW}[*] Installing from local source repository (${SOURCE_DIR})...${C_RESET}"
+    if [ "${SOURCE_DIR}" != "${INSTALL_DIR}" ]; then
+        if command -v rsync >/dev/null 2>&1; then
+            rsync -a --exclude 'venv' --exclude '__pycache__' --exclude '.git' "${SOURCE_DIR}/" "${INSTALL_DIR}/"
+        else
+            cp -r "${SOURCE_DIR}"/* "${INSTALL_DIR}/"
+        fi
+        rm -rf "${INSTALL_DIR}/venv"
+    fi
+else
+    echo -e "${C_YELLOW}[*] Downloading latest PhantomNode OS from GitHub repository...${C_RESET}"
+    if [ -d "${INSTALL_DIR}/.git" ]; then
+        (
+            cd "${INSTALL_DIR}"
+            git fetch origin main >/dev/null 2>&1 || true
+            git reset --hard origin/main >/dev/null 2>&1 || true
+        )
+    else
+        git clone https://github.com/miatoszs/phantom-node.git "${INSTALL_DIR}"
+    fi
 fi
 
 # Ensure target directory is a valid git repository linked to origin for 1-click updates
@@ -176,24 +198,59 @@ systemctl enable --now phantom-dashboard.service
 ln -sf "${INSTALL_DIR}/phantom" /usr/local/bin/phantom
 chmod +x /usr/local/bin/phantom
 
-# Step 8: Final Summary
-PRIMARY_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7}' | tr -d '\n' || echo "localhost")
+# Step 8: Interactive Shell & SSH Welcome Banner
+echo -e "${C_CYAN}[8/8] Setting up interactive Shell & SSH login banner...${C_RESET}"
+cp "${INSTALL_DIR}/scripts/phantom-welcome.sh" /etc/profile.d/phantom-welcome.sh
+chmod +x /etc/profile.d/phantom-welcome.sh
+
+BASHRC_HOOK='# PhantomNode OS Welcome Banner
+if [ -f /etc/profile.d/phantom-welcome.sh ]; then
+    . /etc/profile.d/phantom-welcome.sh
+fi'
+
+if [ -f /etc/bash.bashrc ] && ! grep -q "phantom-welcome.sh" /etc/bash.bashrc 2>/dev/null; then
+    echo -e "\n${BASHRC_HOOK}" >> /etc/bash.bashrc
+fi
+
+if [ -f /root/.bashrc ] && ! grep -q "phantom-welcome.sh" /root/.bashrc 2>/dev/null; then
+    echo -e "\n${BASHRC_HOOK}" >> /root/.bashrc
+fi
+
+for udir in /home/*; do
+    if [ -d "$udir" ] && [ -f "$udir/.bashrc" ]; then
+        if ! grep -q "phantom-welcome.sh" "$udir/.bashrc" 2>/dev/null; then
+            echo -e "\n${BASHRC_HOOK}" >> "$udir/.bashrc"
+        fi
+    fi
+done
+
+# Final Summary
+PRIMARY_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{print $7}' | tr -d '\n')
+if [ -z "$PRIMARY_IP" ] || [ "$PRIMARY_IP" = "localhost" ]; then
+    PRIMARY_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+fi
+[ -z "$PRIMARY_IP" ] && PRIMARY_IP="127.0.0.1"
+DASHBOARD_PORT=7426
 
 echo -e "\n${C_GREEN}======================================================================${C_RESET}"
 echo -e "${C_GREEN}   🎉 PhantomNode OS Installation Finished Successfully!${C_RESET}"
 echo -e "${C_GREEN}======================================================================${C_RESET}\n"
 
-echo -e "  ${C_CYAN}Local LAN Web Dashboard:${C_RESET}     http://${PRIMARY_IP}:7426"
+echo -e "  ${C_WHITE}🌐 Web Dashboard URL:${C_RESET}  ${C_GREEN}http://${PRIMARY_IP}:${DASHBOARD_PORT}${C_RESET}"
+echo -e "  ${C_WHITE}📍 Host IP Address:${C_RESET}    ${C_CYAN}${PRIMARY_IP}${C_RESET}"
+echo -e "  ${C_WHITE}🔌 Dashboard Port:${C_RESET}     ${C_CYAN}${DASHBOARD_PORT}${C_RESET}"
 if [ -n "${DASHBOARD_ONION}" ]; then
-    echo -e "  ${C_PURPLE}Tor v3 Master .onion URL:${C_RESET}     http://${DASHBOARD_ONION}"
+    echo -e "  ${C_WHITE}🧅 Tor v3 Master Onion:${C_RESET} ${C_PURPLE}http://${DASHBOARD_ONION}${C_RESET}"
 else
-    echo -e "  ${C_YELLOW}Tor v3 Master .onion URL:${C_RESET}     Generating (check with 'phantom onion list')"
+    echo -e "  ${C_WHITE}🧅 Tor v3 Master Onion:${C_RESET} ${C_YELLOW}Active (run 'phantom onion list')${C_RESET}"
 fi
 
-echo -e "\n  ${C_CYAN}Command Line Management:${C_RESET}"
+echo -e "\n  ${C_WHITE}⌨️  Command Line Management:${C_RESET}"
 echo -e "    phantom status              - Show system health, Tor status, and apps"
+echo -e "    phantom welcome             - View login banner, IP, port & telemetry"
 echo -e "    phantom app list            - Browse Privacy App Store catalog"
 echo -e "    phantom app install <id>    - 1-Click application deployment"
+echo -e "    phantom app update-all      - 1-Click update all installed apps"
 echo -e "    phantom onion list          - List all active Tor v3 onion services"
+echo -e "    phantom update              - 1-Click system OTA update from GitHub"
 echo -e "    phantom opsec arm-usb       - Arm the USB Dead Man's Switch\n"
-EOF

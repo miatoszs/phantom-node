@@ -46,6 +46,7 @@ def show_help():
 
 \033[1mCommands:\033[0m
   \033[36mstatus\033[0m                      Show system health, Tor status, and running apps
+  \033[36mwelcome\033[0m                     Display welcome banner with dashboard IP, port & metrics
   \033[36mapp list\033[0m                    List all available and installed privacy apps
   \033[36mapp install <app_id>\033[0m        Install and launch an application from the catalog
   \033[36mapp start <app_id>\033[0m          Start an installed application
@@ -65,11 +66,22 @@ def show_help():
 
 def cmd_status():
     print_banner()
+    primary_ip = "127.0.0.1"
+    try:
+        import socket
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("1.1.1.1", 80))
+        primary_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        pass
+
     tor_active = tor_mgr.is_tor_active()
     tor_status = "\033[32mActive (v3 Hidden Services Ready)\033[0m" if tor_active else "\033[31mInactive\033[0m"
     opsec_status = opsec_mgr.get_opsec_status()
     usb_status = "\033[32mARMED\033[0m" if opsec_status["usb_switch_armed"] else "\033[33mDisarmed\033[0m"
 
+    print(f"  \033[1mWeb Dashboard:\033[0m         \033[32mhttp://{primary_ip}:7426\033[0m \033[90m(IP: {primary_ip}, Port: 7426)\033[0m")
     print(f"  \033[1mTor Network:\033[0m           {tor_status}")
     print(f"  \033[1mUSB Dead Man's Switch:\033[0m {usb_status}")
     print(f"  \033[1mUFW WAN Shield:\033[0m        {'\033[32mActive\033[0m' if opsec_status['ufw_active'] else '\033[33mInactive\033[0m'}")
@@ -300,6 +312,14 @@ def main():
 
     if cmd == "status":
         cmd_status()
+    elif cmd in ["welcome", "info"]:
+        welcome_sh = SCRIPT_DIR / "scripts" / "phantom-welcome.sh"
+        if welcome_sh.exists():
+            os.system(f"bash {welcome_sh} --force")
+        elif Path("/etc/profile.d/phantom-welcome.sh").exists():
+            os.system("/etc/profile.d/phantom-welcome.sh --force")
+        else:
+            cmd_status()
     elif cmd == "app":
         cmd_app(args)
     elif cmd == "onion":
