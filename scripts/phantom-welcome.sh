@@ -34,11 +34,12 @@ fi
 
 DASHBOARD_PORT=7426
 
-# Read Tor v3 Master Onion
+# Read Tor v3 Master Onion (checks public cache first, falls back to Tor directory)
 DASHBOARD_ONION=""
-ONION_FILE="/var/lib/tor/phantom_services/dashboard/hostname"
-if [ -f "$ONION_FILE" ]; then
-    DASHBOARD_ONION=$(cat "$ONION_FILE" 2>/dev/null | tr -d '\n')
+if [ -f "/var/lib/phantom-node/onions/dashboard.onion" ]; then
+    DASHBOARD_ONION=$(cat "/var/lib/phantom-node/onions/dashboard.onion" 2>/dev/null | tr -d '\n')
+elif [ -f "/var/lib/tor/phantom_services/dashboard/hostname" ]; then
+    DASHBOARD_ONION=$(cat "/var/lib/tor/phantom_services/dashboard/hostname" 2>/dev/null | tr -d '\n')
 fi
 
 # Quick resource metrics

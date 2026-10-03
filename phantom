@@ -56,6 +56,12 @@ tor_mgr = LazyManager(_init_tor)
 opsec_mgr = LazyManager(_init_opsec)
 system_mgr = LazyManager(_init_system)
 
+def check_root(action: str = "perform this action"):
+    """Enforces root privileges with a user-friendly message for mutating operations."""
+    if hasattr(os, "geteuid") and os.geteuid() != 0:
+        print(f"\033[31m[!] Root privileges required to {action}. Please run with: sudo phantom ...\033[0m")
+        sys.exit(1)
+
 def print_banner():
     print("""
     \033[1;36m
@@ -76,6 +82,7 @@ def show_help():
   \033[36mstatus\033[0m                      Show system health, Tor status, and running apps
   \033[36mwelcome\033[0m                     Display welcome banner with dashboard IP, port & metrics
   \033[36mapp list\033[0m                    List all available and installed privacy apps
+  \033[36mapp info <app_id>\033[0m           Show application details, network ports and Tor onion
   \033[36mapp install <app_id>\033[0m        Install and launch an application from the catalog
   \033[36mapp start <app_id>\033[0m          Start an installed application
   \033[36mapp stop <app_id>\033[0m           Stop a running application
@@ -141,7 +148,52 @@ def cmd_app(args):
             else:
                 st = "Available"
             print(f"{a['id']:<18} {a['name']:<28} {a['category']:<18} {a['opsec_level']:<10} {st}")
+    elif sub in ["info", "show"]:
+        if len(args) < 2:
+            print("[!] Please specify app_id: phantom app info <app_id>")
+            return
+        app_id = args[1]
+        apps = docker_mgr.list_available_apps()
+        app = next((a for a in apps if a.get("id") == app_id), None)
+        if not app:
+            app = docker_mgr.get_app_manifest(app_id)
+        if not app:
+            print(f"\033[31m[!] App '{app_id}' not found in catalog or installed applications.\033[0m")
+            return
+
+        is_inst = app.get("is_installed", docker_mgr.is_app_installed(app_id))
+        is_run = app.get("is_running", docker_mgr.is_app_running(app_id)) if is_inst else False
+        status_str = "\033[32mInstalled (Running)\033[0m" if is_run else ("\033[33mInstalled (Stopped)\033[0m" if is_inst else "\033[90mAvailable in catalog\033[0m")
+        onion = app.get("onion") or tor_mgr.get_onion_address(app_id)
+
+        print(f"\n\033[1m=== Application Information: {app.get('name', app_id)} ({app_id}) ===\033[0m\n")
+        print(f"  \033[1mStatus:\033[0m             {status_str}")
+        print(f"  \033[1mCategory:\033[0m           {app.get('category', 'N/A')}")
+        print(f"  \033[1mOPSEC Level:\033[0m        {app.get('opsec_level', 'Standard')}")
+        if app.get("description"):
+            print(f"  \033[1mDescription:\033[0m        {app.get('description')}")
+        if onion:
+            print(f"  \033[1mTor v3 Onion:\033[0m       \033[35mhttp://{onion}\033[0m")
+
+        print(f"\n  \033[1mNetwork Ports Configuration:\033[0m")
+        web_p = app.get("web_port")
+        web_lbl = app.get("web_port_label", "Web UI / Dashboard")
+        if web_p:
+            print(f"    - \033[36mPort {web_p} (TCP)\033[0m -> {web_lbl} [Localhost / LAN]")
+        for ep in app.get("extra_ports", []):
+            ep_port = ep.get("port") or ep.get("default")
+            ep_proto = (ep.get("protocol") or "tcp").upper()
+            ep_label = ep.get("label") or ep.get("key")
+            ep_desc = ep.get("description", "")
+            desc_str = f" ({ep_desc})" if ep_desc else ""
+            print(f"    - \033[36mPort {ep_port} ({ep_proto})\033[0m -> {ep_label}{desc_str}")
+
+        if app.get("setup_guide"):
+            print(f"\n  \033[1mUsage & Integration Guide:\033[0m")
+            print(f"    {app.get('setup_guide')}")
+        print("")
     elif sub == "install":
+        check_root("install applications")
         if len(args) < 2:
             print("[!] Please specify app_id: phantom app install <app_id> [--port <port>] [--advanced]")
             return
@@ -218,10 +270,12 @@ def cmd_app(args):
         else:
             print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
     elif sub == "fix-ports":
+        check_root("migrate port bindings")
         print("[*] Migrating all installed apps to LAN port bindings (0.0.0.0)...")
         docker_mgr.fix_installed_port_bindings()
         print("\033[32m[+] Done!\033[0m")
     elif sub in ["start", "stop", "restart"]:
+        check_root(f"{sub} applications")
         if len(args) < 2:
             print(f"[!] Please specify app_id: phantom app {sub} <app_id>")
             return
@@ -230,6 +284,7 @@ def cmd_app(args):
         res = fn(app_id)
         print(f"[*] App {app_id} {sub} result: {'Success' if res.get('success') else res.get('error')}")
     elif sub == "update":
+        check_root("update applications")
         if len(args) < 2:
             print("[!] Please specify app_id: phantom app update <app_id> (or 'phantom app update-all')")
             return
@@ -241,6 +296,7 @@ def cmd_app(args):
         else:
             print(f"\033[31m[!] Error: {res.get('error')}\033[0m")
     elif sub in ["update-all", "upgrade-all"]:
+        check_root("update applications")
         print("[*] Pulling latest images and updating all installed containers...")
         res = docker_mgr.update_all_apps()
         if res.get("total", 0) == 0:
@@ -251,6 +307,7 @@ def cmd_app(args):
             st = "\033[32m[Updated]\033[0m" if r.get("success") else f"\033[31m[Failed: {r.get('error')}]\033[0m"
             print(f"  - {aid}: {st}")
     elif sub == "remove":
+        check_root("remove applications")
         if len(args) < 2:
             print("[!] Please specify app_id: phantom app remove <app_id>")
             return
@@ -286,12 +343,15 @@ def cmd_opsec(args):
         print(f"  UFW Firewall (Zero WAN):        {'\033[32mActive\033[0m' if st['ufw_active'] else '\033[31mInactive\033[0m'}")
         print(f"  Kernel Sysctl Hardening:        {'\033[32mApplied\033[0m' if st['sysctl_hardened'] else '\033[33mDefault\033[0m'}")
     elif args[0] == "arm-usb":
+        check_root("arm the USB Dead Man's Switch")
         res = opsec_mgr.set_usb_switch(True)
         print(f"[*] {res.get('message', res.get('error'))}")
     elif args[0] == "disarm-usb":
+        check_root("disarm the USB Dead Man's Switch")
         res = opsec_mgr.set_usb_switch(False)
         print(f"[*] {res.get('message', res.get('error'))}")
     elif args[0] == "panic":
+        check_root("trigger panic shutdown")
         confirm = input("\033[31m[DANGER] This will IMMEDIATELY flush RAM caches and power off the machine! Proceed? (yes/NO): \033[0m")
         if confirm == "yes":
             opsec_mgr.trigger_panic("poweroff")
@@ -318,6 +378,7 @@ def cmd_update(args):
 
         subcmd = mirror_args[0]
         if subcmd == "set":
+            check_root("set update mirror")
             if len(mirror_args) < 2:
                 print("\033[31m[!] Please provide a repository URL: phantom update mirror set <url>\033[0m")
                 return
@@ -337,6 +398,7 @@ def cmd_update(args):
                 print(f"\033[31m[!] Failed to set mirror: {res.get('error')}\033[0m")
 
         elif subcmd == "reset":
+            check_root("reset update mirror")
             res = system_mgr.reset_mirror_url()
             print(f"\033[32m[+] {res.get('message')}\033[0m")
 
@@ -370,6 +432,7 @@ def cmd_update(args):
         else:
             print(f"\033[32m[+] PhantomNode OS is up to date (commit {res.get('current_commit')}).\033[0m")
     else:
+        check_root("apply system update")
         mirror = system_mgr.get_mirror_url()
         onion_note = " (over Tor)" if system_mgr.is_onion_url(mirror) else ""
         print(f"[*] Checking for PhantomNode OS updates from {mirror}{onion_note}...")

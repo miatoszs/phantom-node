@@ -29,6 +29,12 @@ tor_mgr = TorManager()
 opsec_mgr = OpsecManager()
 system_mgr = SystemManager()
 
+# Ensure public Tor onion cache is populated on startup
+try:
+    tor_mgr.sync_onion_cache()
+except Exception:
+    pass
+
 START_TIME = time.time()
 
 class PanicRequest(BaseModel):
