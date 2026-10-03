@@ -382,6 +382,11 @@ class DockerManager:
                             f'WG_PORT={actual_ep_val}',
                             compose_content
                         )
+                        compose_content = re.sub(
+                            rf'{ep_key.upper()}={ep_orig_def}\b',
+                            f'{ep_key.upper()}={actual_ep_val}',
+                            compose_content
+                        )
 
                     ep["default"] = actual_ep_val
 
@@ -535,9 +540,17 @@ class DockerManager:
             return {"success": False, "error": f"App '{app_id}' is not installed."}
 
         try:
-            # 1. Pull latest Docker images
+            # 1. Pull latest Docker images (ignoring locally built services)
             pull_res = subprocess.run(
-                ["docker", "compose", "pull"],
+                ["docker", "compose", "pull", "--ignore-buildable"],
+                cwd=str(app_path),
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
+            # Rebuild any local buildable containers
+            subprocess.run(
+                ["docker", "compose", "build"],
                 cwd=str(app_path),
                 capture_output=True,
                 text=True,

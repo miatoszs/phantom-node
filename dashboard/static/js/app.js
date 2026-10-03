@@ -1131,6 +1131,18 @@ function getClientGuide(appId, host, app) {
                 ${onion ? `<div style="margin-top: 4px;">• Tor v3 Web Console: <code style="color:#c084fc;">${onion}</code></div>` : ''}
             `;
         }
+        case 'tor-snowflake': {
+            const socksPort = getPort('socks_port', 9050);
+            const httpPort = getPort('http_port', 8118);
+            return `
+                <div style="margin-bottom: 6px;"><strong>Tor Snowflake & Proxy Client Setup:</strong></div>
+                <div style="margin-bottom: 4px;">• SOCKS5 Proxy: <code style="color:var(--accent-cyan);">${host}:${socksPort}</code> (Telegram, Feather Wallet, Firefox)</div>
+                <div style="margin-bottom: 4px;">• HTTP/HTTPS Proxy: <code style="color:var(--accent-cyan);">${host}:${httpPort}</code> (cURL, system proxy, mobile)</div>
+                <div style="margin-bottom: 4px;">• Web Status & Verification Console: <a href="http://${host}:${webPort}" target="_blank" style="color:var(--accent-cyan);text-decoration:underline;">http://${host}:${webPort}</a></div>
+                <div style="margin-top: 4px; font-size: 11px; color: var(--text-dim);">All proxy traffic routes through Tor using Snowflake WebRTC pluggable transport to defeat ISP blocking. A volunteer Snowflake relay runs alongside to assist censored users.</div>
+                ${onion ? `<div style="margin-top: 4px;">• Tor v3 Web Console: <code style="color:#c084fc;">${onion}</code></div>` : ''}
+            `;
+        }
         default:
             return `
                 <div style="margin-bottom: 4px;">• Local Service Endpoint: <code style="color:var(--accent-cyan);">http://${host}:${webPort}</code></div>

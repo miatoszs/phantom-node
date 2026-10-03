@@ -1,0 +1,28 @@
+{
+  "id": "tor-snowflake",
+  "name": "Tor Snowflake & Proxy",
+  "category": "Encrypted Network",
+  "description": "Censorship-resistant Tor SOCKS5 & HTTP proxy with Snowflake WebRTC pluggable transport to defeat ISP blocking and DPI. Includes a volunteer Snowflake proxy relay to help censored users connect worldwide.",
+  "opsec_level": "Level 3",
+  "web_port": 9080,
+  "web_port_label": "Proxy Web Console Port",
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "tor-snowflake",
+  "extra_ports": [
+    {
+      "key": "socks_port",
+      "label": "Tor SOCKS5 Proxy Port",
+      "default": 9050,
+      "protocol": "tcp",
+      "description": "Port used by browsers, Telegram, Feather Wallet, and CLI tools for SOCKS5 traffic"
+    },
+    {
+      "key": "http_port",
+      "label": "Privoxy HTTP/HTTPS Proxy Port",
+      "default": 8118,
+      "protocol": "tcp",
+      "description": "Port used by curl, system proxies, mobile devices, and standard HTTP clients"
+    }
+  ]
+}

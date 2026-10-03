@@ -1,0 +1,20 @@
+services:
+  tor-proxy:
+    build: .
+    image: phantom-tor-snowflake:latest
+    container_name: phantom_tor_snowflake_proxy
+    restart: unless-stopped
+    ports:
+      - "9080:9080"
+      - "9050:9050"
+      - "8118:8118"
+    environment:
+      - TOR_USE_SNOWFLAKE=1
+      - SOCKS_PORT=9050
+      - HTTP_PORT=8118
+      - WEB_PORT=9080
+
+  snowflake-relay:
+    image: thetorproject/snowflake-proxy:latest
+    container_name: phantom_snowflake_relay
+    restart: unless-stopped
