@@ -377,6 +377,24 @@ class SystemManager:
             except Exception as em:
                 print(f"[SystemManager] Port migration notice: {em}")
 
+            # Tor onion cache sync for non-root users
+            try:
+                from .tor_manager import TorManager
+                TorManager().sync_onion_cache()
+            except Exception as et:
+                print(f"[SystemManager] Tor cache sync notice: {et}")
+
+            # Ensure CLI link in /usr/local/bin/phantom
+            try:
+                cli_path = Path("/usr/local/bin/phantom")
+                repo_cli = self.base_dir / "phantom"
+                if repo_cli.exists():
+                    os.chmod(str(repo_cli), 0o755)
+                    if not cli_path.is_symlink() or not cli_path.exists():
+                        subprocess.run(["ln", "-sf", str(repo_cli), "/usr/local/bin/phantom"], capture_output=True)
+            except Exception as ec:
+                print(f"[SystemManager] CLI link notice: {ec}")
+
             try:
                 hardening_script = self.base_dir / "scripts" / "hardening.sh"
                 if hardening_script.exists():

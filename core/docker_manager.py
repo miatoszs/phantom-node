@@ -119,11 +119,29 @@ class DockerManager:
         """
         if not self.installed_dir.exists():
             return
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            try:
+                os.chmod(self.installed_dir, 0o755)
+            except Exception:
+                pass
         for app_dir in self.installed_dir.iterdir():
             if not app_dir.is_dir():
                 continue
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                try:
+                    os.chmod(app_dir, 0o755)
+                    man_f = app_dir / "manifest.json"
+                    if man_f.exists():
+                        os.chmod(man_f, 0o644)
+                except Exception:
+                    pass
             compose_file = app_dir / "docker-compose.yml"
             if compose_file.exists():
+                if hasattr(os, "geteuid") and os.geteuid() == 0:
+                    try:
+                        os.chmod(compose_file, 0o644)
+                    except Exception:
+                        pass
                 try:
                     content = compose_file.read_text(encoding="utf-8")
                     new_content = content
@@ -185,11 +203,18 @@ class DockerManager:
                     manifest["id"] = app_id
                     manifest["is_installed"] = self.is_app_installed(app_id)
                     manifest["is_running"] = self.is_app_running(app_id) if manifest["is_installed"] else False
-                    manifest["onion"] = self.tor_manager.get_onion_address(app_id) if manifest["is_installed"] else None
+                    onion_addr = None
                     if manifest["is_installed"]:
-                        inst_m = self.installed_dir / app_id / "manifest.json"
-                        if inst_m.exists():
-                            try:
+                        try:
+                            onion_addr = self.tor_manager.get_onion_address(app_id)
+                        except Exception:
+                            onion_addr = None
+                    manifest["onion"] = onion_addr
+
+                    if manifest["is_installed"]:
+                        try:
+                            inst_m = self.installed_dir / app_id / "manifest.json"
+                            if inst_m.exists():
                                 with open(inst_m, "r", encoding="utf-8") as imf:
                                     inst_data = json.load(imf)
                                     if "web_port" in inst_data:
@@ -214,8 +239,8 @@ class DockerManager:
                                                             ep["port"] = val
                                         else:
                                             manifest["extra_ports"] = inst_data["extra_ports"]
-                            except Exception:
-                                pass
+                        except Exception:
+                            pass
                         manifest["suggested_web_port"] = manifest.get("web_port")
                         manifest["port_conflict"] = False
                     else:
@@ -238,16 +263,19 @@ class DockerManager:
 
     def is_app_installed(self, app_id: str) -> bool:
         """Checks if app exists in installed directory."""
-        app_path = self.installed_dir / app_id
-        return (app_path / "docker-compose.yml").exists()
+        try:
+            app_path = self.installed_dir / app_id
+            return (app_path / "docker-compose.yml").exists()
+        except (PermissionError, OSError):
+            return False
 
     def is_app_running(self, app_id: str) -> bool:
         """Checks if containers for this app are currently running."""
-        app_path = self.installed_dir / app_id
-        if not app_path.exists():
-            return False
-
         try:
+            app_path = self.installed_dir / app_id
+            if not app_path.exists():
+                return False
+
             res = subprocess.run(
                 ["docker", "compose", "ps", "--status", "running", "-q"],
                 cwd=str(app_path),
@@ -256,6 +284,8 @@ class DockerManager:
                 timeout=5
             )
             return res.returncode == 0 and bool(res.stdout.strip())
+        except (PermissionError, OSError):
+            return False
         except Exception:
             return False
 
@@ -264,12 +294,24 @@ class DockerManager:
         installed_manifest = self.installed_dir / app_id / "manifest.json"
         catalog_manifest = self.apps_dir / app_id / "manifest.json"
 
-        target = installed_manifest if installed_manifest.exists() else catalog_manifest
-        if target.exists():
-            with open(target, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                data["id"] = app_id
-                return data
+        try:
+            target = installed_manifest if installed_manifest.exists() else catalog_manifest
+            if target.exists():
+                with open(target, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    data["id"] = app_id
+                    return data
+        except (PermissionError, OSError):
+            try:
+                if catalog_manifest.exists():
+                    with open(catalog_manifest, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        data["id"] = app_id
+                        return data
+            except Exception:
+                pass
+        except Exception:
+            pass
         return None
 
     def install_app(self, app_id: str, custom_config: Optional[Dict] = None) -> Dict:
@@ -293,6 +335,11 @@ class DockerManager:
 
         try:
             target_dir.mkdir(parents=True, exist_ok=True)
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                try:
+                    os.chmod(target_dir, 0o755)
+                except Exception:
+                    pass
 
             # Copy template files
             for item in source_dir.iterdir():
@@ -394,6 +441,11 @@ class DockerManager:
             manifest["onion_port"] = onion_port
             with open(installed_manifest_path, "w", encoding="utf-8") as fm:
                 json.dump(manifest, fm, indent=2, ensure_ascii=False)
+            if hasattr(os, "geteuid") and os.geteuid() == 0:
+                try:
+                    os.chmod(installed_manifest_path, 0o644)
+                except Exception:
+                    pass
 
             # Generate .env with randomized secrets
             env_example = source_dir / ".env.example"

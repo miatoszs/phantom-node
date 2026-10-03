@@ -11,6 +11,7 @@ DATA_DIR = Path(os.environ.get("PHANTOM_DATA_DIR", "/var/lib/phantom-node"))
 INSTALLED_APPS_DIR = DATA_DIR / "installed_apps"
 SCRIPTS_DIR = BASE_DIR / "scripts"
 UPDATE_MIRROR_FILE = DATA_DIR / "update_mirror.txt"
+ONION_CACHE_DIR = DATA_DIR / "onions"
 
 # Tor configurations
 TORRC_FILE = Path("/etc/tor/torrc")
@@ -28,5 +29,10 @@ SECRET_KEY = os.environ.get("PHANTOM_SECRET_KEY", "phantom-node-super-secret-key
 try:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     INSTALLED_APPS_DIR.mkdir(parents=True, exist_ok=True)
+    ONION_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        os.chmod(DATA_DIR, 0o755)
+        os.chmod(INSTALLED_APPS_DIR, 0o755)
+        os.chmod(ONION_CACHE_DIR, 0o755)
 except Exception:
     pass

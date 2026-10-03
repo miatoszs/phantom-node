@@ -85,6 +85,10 @@ DATA_DIR="/var/lib/phantom-node"
 echo -e "${C_CYAN}[3/8] Deploying PhantomNode to ${INSTALL_DIR}...${C_RESET}"
 mkdir -p "${INSTALL_DIR}"
 mkdir -p "${DATA_DIR}/installed_apps"
+mkdir -p "${DATA_DIR}/onions"
+chmod 755 "${DATA_DIR}" 2>/dev/null || true
+chmod 755 "${DATA_DIR}/installed_apps" 2>/dev/null || true
+chmod 755 "${DATA_DIR}/onions" 2>/dev/null || true
 
 # Determine if running from an existing cloned repository
 SOURCE_DIR=""
@@ -179,6 +183,12 @@ for i in {1..15}; do
     sleep 1
 done
 echo ""
+
+if [ -n "${DASHBOARD_ONION}" ]; then
+    mkdir -p "${DATA_DIR}/onions"
+    echo "${DASHBOARD_ONION}" > "${DATA_DIR}/onions/dashboard.onion"
+    chmod 644 "${DATA_DIR}/onions/dashboard.onion" 2>/dev/null || true
+fi
 
 # Step 6: Apply System & Kernel Hardening
 echo -e "${C_CYAN}[6/8] Executing Kernel & Sysctl Anti-Forensics Hardening...${C_RESET}"
