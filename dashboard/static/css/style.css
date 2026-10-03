@@ -334,19 +334,26 @@ body { background:radial-gradient(ellipse at 73% -10%,rgba(87,80,154,.18),transp
   .main-container { margin-left:0; padding:24px 15px 40px; }
 }
 
-/* Tor Browser / NoScript Alert Overlay */
-.tor-noscript-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(4, 7, 12, 0.95);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  z-index: 99999999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  overflow-y: auto;
+/* Tor Browser / NoScript Alert Banner */
+#tor-nojs-banner {
+  display: none;
+}
+html.no-js #tor-nojs-banner {
+  display: flex !important;
+  position: fixed !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+  width: 100vw !important; height: 100vh !important;
+  background: rgba(4, 7, 12, 0.98) !important;
+  z-index: 2147483647 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+}
+html.no-js .navbar,
+html.no-js .main-container {
+  display: none !important;
 }
 .tor-noscript-modal {
   background: #10151f;
