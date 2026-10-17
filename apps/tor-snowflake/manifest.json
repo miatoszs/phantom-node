@@ -8,7 +8,7 @@
   "web_port_label": "Proxy Web Console Port",
   "onion_port": 80,
   "memory_mb": 256,
-  "icon": "tor-snowflake",
+  "icon": "tor",
   "extra_ports": [
     {
       "key": "socks_port",
