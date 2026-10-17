@@ -1281,3 +1281,27 @@ function getClientGuide(appId, host, app) {
             `;
     }
 }
+
+// ---------- Sidebar navigation (Operator Console layout) ----------
+// Sidebar "Overview" / "App Store" entries drive the existing tab buttons,
+// and the sidebar highlight follows whichever tab is active.
+document.addEventListener('DOMContentLoaded', () => {
+    const navItems = document.querySelectorAll('[data-nav-tab]');
+    const syncSidebar = (tab) => {
+        navItems.forEach(n => n.classList.toggle('active', n.dataset.navTab === tab));
+    };
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const tabBtn = document.querySelector(`.tab-btn[data-tab="${item.dataset.navTab}"]`);
+            if (tabBtn) tabBtn.click();
+            if (item.dataset.navTab === 'catalog') {
+                document.getElementById('apps-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => syncSidebar(btn.dataset.tab));
+    });
+});
