@@ -19,3 +19,7 @@ __pycache__/
 .env
 data/
 installed_apps/
+
+# ISO build output
+dist/
+.build-commit

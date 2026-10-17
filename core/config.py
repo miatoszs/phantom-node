@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 # Base paths & Version
-PHANTOM_VERSION = "1.1.0"
+PHANTOM_VERSION = "1.2.0"
 DEFAULT_REPO_URL = "https://github.com/miatoszs/phantom-node.git"
 GITHUB_REPO_URL = DEFAULT_REPO_URL
 BASE_DIR = Path(__file__).resolve().parent.parent

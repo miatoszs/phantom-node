@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# PhantomNode OS - Turnkey Automated Installer for Debian 12 / Kicksecure
+# PhantomNode OS - Turnkey Automated Installer for Debian 12/13 / Kicksecure
 # "The Sovereign Privacy Server"
 # ==============================================================================
 set -euo pipefail
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+# systemd units (first-boot setup) run without HOME; git --global needs it
+export HOME="${HOME:-/root}"
 
 # Visual styling
 C_CYAN='\033[1;36m'
@@ -110,6 +112,9 @@ if [ -n "${SOURCE_DIR}" ]; then
         fi
         rm -rf "${INSTALL_DIR}/venv"
     fi
+    # Code here runs as root: it must not stay owned by whoever cloned/copied it
+    # (on the ISO install, UID 1000 is the operator account)
+    chown -R root:root "${INSTALL_DIR}"
 else
     echo -e "${C_YELLOW}[*] Downloading latest PhantomNode OS from GitHub repository...${C_RESET}"
     if [ -d "${INSTALL_DIR}/.git" ]; then
@@ -140,12 +145,7 @@ echo -e "${C_CYAN}[4/8] Setting up isolated Python runtime environment...${C_RES
 rm -rf "${INSTALL_DIR}/venv"
 python3 -m venv --clear "${INSTALL_DIR}/venv"
 "${INSTALL_DIR}/venv/bin/pip" install --upgrade pip >/dev/null 2>&1 || true
-"${INSTALL_DIR}/venv/bin/pip" install \
-    fastapi \
-    "uvicorn[standard]" \
-    jinja2 \
-    pydantic \
-    psutil
+"${INSTALL_DIR}/venv/bin/pip" install -r "${INSTALL_DIR}/requirements.txt"
 
 # Step 5: Configure Tor Engine & Master Dashboard Onion
 echo -e "${C_CYAN}[5/8] Configuring Tor v3 Engine & Master Hidden Service...${C_RESET}"

@@ -70,9 +70,36 @@
 
 ---
 
-## 🚀 1-Command Turnkey Installation (Debian 12 / Kicksecure)
+## 💿 Installer ISO (recommended for new hardware)
 
-Deploy **PhantomNode OS** on any clean installation of **Debian 12 Minimal** or **Kicksecure** with a single command:
+Download `phantomnode-<version>-amd64.iso` from [Releases](https://github.com/miatoszs/phantom-node/releases), verify it, and write it to a USB stick:
+
+```bash
+sha512sum -c phantomnode-1.2.0-amd64.iso.sha512
+sudo dd if=phantomnode-1.2.0-amd64.iso of=/dev/sdX bs=4M status=progress conv=fsync
+```
+
+The ISO is the official **Debian 13 netinst** (signature-verified at build time) with a PhantomNode preseed. Boot it (BIOS or UEFI), pick **PhantomNode OS - Graphical install**, and you only answer:
+
+1. Keyboard layout
+2. Which disk to erase
+3. The **disk encryption passphrase** (full-disk LUKS2 + LVM, swap encrypted too)
+4. The password for the `phantom` operator account
+
+Everything else is automatic: hostname `phantom-node`, UTC timezone (doesn't reveal your location), no root login, SSH server, no popularity-contest. After the first reboot, enter the disk passphrase and PhantomNode installs itself (Docker, Tor, dashboard), which takes about 5-10 minutes and needs internet. The console login screen then shows the dashboard address. Get the first password with `sudo phantom password show`.
+
+> The installer does **not** pre-wipe the disk with random data (it can take hours). Everything written afterwards is encrypted; wipe the disk beforehand if it held sensitive data.
+
+Build it yourself (needs `xorriso`, `gpg`, `curl`):
+```bash
+scripts/build-iso.sh            # -> dist/phantomnode-<version>-amd64.iso
+```
+
+---
+
+## 🚀 1-Command Turnkey Installation (Debian 12/13 / Kicksecure)
+
+Already have a server? Deploy **PhantomNode OS** on any clean installation of **Debian 12/13 Minimal** or **Kicksecure** with a single command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/miatoszs/phantom-node/main/install.sh | sudo bash
