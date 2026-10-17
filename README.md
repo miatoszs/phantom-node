@@ -95,6 +95,15 @@ Open the dashboard in your web browser:
 - **Local Network:** `http://<server-ip>:7426`
 - **Remote Access (Worldwide):** `http://<master-onion-address>.onion` (in Tor Browser)
 
+### 🔑 Dashboard Login
+The dashboard (LAN and `.onion`) requires a password. On first start PhantomNode generates a random one; the installer prints it, and you can show it again on the server:
+```bash
+sudo phantom password show    # first-boot password
+sudo phantom password set     # choose your own (min 10 chars, signs out all sessions)
+sudo phantom password reset   # forgot it? generate a new random one
+```
+Passwords are stored as a salted scrypt hash in `/var/lib/phantom-node/auth.json` (root-only). Sessions use an HttpOnly, SameSite=Strict cookie that expires after 12 hours (`PHANTOM_SESSION_TTL`), and repeated failed logins are throttled.
+
 ### Key Dashboard Capabilities:
 - **Live Telemetry:** Real-time monitoring of CPU load, RAM allocation, NVMe/SSD storage, uptime, and Tor status.
 - **Privacy App Store:** 1-Click deployment for sovereign privacy tools with auto-generated onion services.
@@ -153,6 +162,10 @@ phantom opsec disarm-usb    # Disarm USB defense
 phantom opsec panic         # Trigger immediate emergency shutdown & memory flush
 
 # System OTA Updates & Custom Tor Mirrors
+phantom password show       # Show the first-boot dashboard password
+phantom password set        # Set your own dashboard password
+phantom password reset      # Generate a new random dashboard password
+
 phantom update check        # Check for upstream releases
 phantom update              # Download latest changes and restart services
 phantom update mirror       # Show current upstream git mirror

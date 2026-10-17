@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>PhantomNode OS – Sign in</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=1.3.0">
+    <style>
+        .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+        .login-card { width: 100%; max-width: 380px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-xl); padding: 28px 24px; }
+        .login-card .brand { margin-bottom: 22px; }
+        .login-card label { display: block; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+        .login-card input { width: 100%; padding: 10px 12px; background: var(--bg-sunken); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); color: var(--text-main); font-size: 14px; outline: none; }
+        .login-card input:focus { border-color: var(--signal); }
+        .login-card .btn { width: 100%; justify-content: center; margin-top: 16px; }
+        .login-error { min-height: 18px; margin-top: 12px; font-size: 13px; color: var(--danger); }
+        .login-hint { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-color); font-size: 12px; line-height: 1.5; color: var(--text-dim); }
+        .login-hint code { font-family: var(--font-mono); color: var(--text-muted); }
+        .login-nojs { margin-bottom: 14px; padding: 10px 12px; border: 1px solid var(--tor-border); background: var(--tor-soft); color: var(--tor-text); border-radius: var(--radius-sm); font-size: 12px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="login-wrap">
+        <form class="login-card" id="login-form" autocomplete="on">
+            <div class="brand">
+                <div class="brand-icon-box">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <div class="brand-title">PhantomNode <span class="os-tag">OS</span></div>
+                    <div class="brand-subtitle">Operator sign-in</div>
+                </div>
+            </div>
+            <noscript>
+                <div class="login-nojs">JavaScript is required. In Tor Browser, set the Security Level to <b>Standard</b> or allow scripts for this .onion.</div>
+            </noscript>
+            <input type="text" name="username" value="admin" autocomplete="username" hidden>
+            <label for="password">Dashboard password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
+            <button type="submit" class="btn btn-primary" id="login-btn">Unlock</button>
+            <div class="login-error" id="login-error" role="alert"></div>
+            <div class="login-hint">
+                First boot? Show the generated password on the server with <code>sudo phantom password show</code>.
+                Set your own with <code>sudo phantom password set</code>.
+            </div>
+        </form>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('login-error');
+            err.textContent = '';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Phantom-Request': '1' },
+                    body: JSON.stringify({ password: document.getElementById('password').value })
+                });
+                if (res.ok) {
+                    window.location.replace('/');
+                    return;
+                }
+                const data = await res.json().catch(() => ({}));
+                err.textContent = data.detail || 'Sign-in failed.';
+            } catch (_) {
+                err.textContent = 'Network error. Is the dashboard service running?';
+            }
+            btn.disabled = false;
+        });
+    </script>
+</body>
+</html>

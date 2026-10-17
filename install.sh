@@ -12,6 +12,7 @@ C_PURPLE='\033[1;35m'
 C_GREEN='\033[1;32m'
 C_RED='\033[1;31m'
 C_YELLOW='\033[1;33m'
+C_DIM='\033[0;90m'
 C_WHITE='\033[1;37m'
 C_RESET='\033[0m'
 
@@ -255,6 +256,10 @@ else
     echo -e "  ${C_WHITE}🧅 Tor v3 Master Onion:${C_RESET} ${C_YELLOW}Active (run 'phantom onion list')${C_RESET}"
 fi
 
+DASHBOARD_PASSWORD=$(/opt/phantom-node/phantom password show --raw 2>/dev/null)
+if [ -n "${DASHBOARD_PASSWORD}" ]; then
+    echo -e "  ${C_WHITE}🔑 Dashboard Password:${C_RESET} ${C_GREEN}${DASHBOARD_PASSWORD}${C_RESET}  ${C_DIM}(change: sudo phantom password set)${C_RESET}"
+fi
 echo -e "\n  ${C_WHITE}⌨️  Command Line Management:${C_RESET}"
 echo -e "    phantom status              - Show system health, Tor status, and apps"
 echo -e "    phantom welcome             - View login banner, IP, port & telemetry"
@@ -263,4 +268,5 @@ echo -e "    phantom app install <id>    - 1-Click application deployment"
 echo -e "    phantom app update-all      - 1-Click update all installed apps"
 echo -e "    phantom onion list          - List all active Tor v3 onion services"
 echo -e "    phantom update              - 1-Click system OTA update from GitHub"
+echo -e "    phantom password show       - Show the first-boot dashboard password"
 echo -e "    phantom opsec arm-usb       - Arm the USB Dead Man's Switch\n"

@@ -47,6 +47,10 @@ def _init_opsec():
     from core.opsec_manager import OpsecManager
     return OpsecManager()
 
+def _init_auth():
+    from core.auth_manager import AuthManager
+    return AuthManager()
+
 def _init_system():
     from core.system_manager import SystemManager
     return SystemManager()
@@ -55,6 +59,7 @@ docker_mgr = LazyManager(_init_docker)
 tor_mgr = LazyManager(_init_tor)
 opsec_mgr = LazyManager(_init_opsec)
 system_mgr = LazyManager(_init_system)
+auth_mgr = LazyManager(_init_auth)
 
 def check_root(action: str = "perform this action"):
     """Enforces root privileges with a user-friendly message for mutating operations."""
@@ -96,6 +101,9 @@ def show_help():
   \033[36mopsec arm-usb\033[0m               Arm the USB Dead Man's Switch
   \033[36mopsec disarm-usb\033[0m            Disarm the USB Dead Man's Switch
   \033[36mopsec panic\033[0m                 Trigger immediate emergency shutdown & cache drop
+  \033[36mpassword show\033[0m               Show the generated first-boot dashboard password
+  \033[36mpassword set\033[0m                Set a new dashboard password (signs out all sessions)
+  \033[36mpassword reset\033[0m              Generate a new random dashboard password
   \033[36mupdate [check]\033[0m              Check or apply 1-click PhantomNode OS updates
   \033[36mupdate mirror [set|reset]\033[0m   Configure upstream update mirror (Tor .onion / GitLab)
     """)
@@ -451,6 +459,44 @@ def cmd_update(args):
         else:
             print(f"\033[31m[!] Update failed: {res.get('error')}\033[0m")
 
+def cmd_password(args):
+    check_root("manage the dashboard password")
+    sub = args[0] if args else "show"
+    raw = "--raw" in args
+
+    if sub == "show":
+        auth_mgr.ensure_initialized()
+        pw = auth_mgr.get_initial_password()
+        if raw:
+            if pw:
+                print(pw)
+            return
+        if pw:
+            print(f"\033[1mDashboard password:\033[0m \033[32m{pw}\033[0m")
+            print("\033[2mChange it with: sudo phantom password set\033[0m")
+        else:
+            print("A custom password is set, so it is not stored in plain text.")
+            print("Forgot it? Run: sudo phantom password reset")
+    elif sub == "set":
+        import getpass
+        pw1 = getpass.getpass("New dashboard password (min 10 chars): ")
+        pw2 = getpass.getpass("Repeat password: ")
+        if pw1 != pw2:
+            print("\033[31m[!] Passwords do not match.\033[0m")
+            sys.exit(1)
+        res = auth_mgr.set_password(pw1)
+        if not res.get("success"):
+            print(f"\033[31m[!] {res.get('error')}\033[0m")
+            sys.exit(1)
+        print(f"\033[32m[+] {res['message']}\033[0m")
+    elif sub == "reset":
+        import secrets
+        pw = secrets.token_urlsafe(12)
+        auth_mgr.set_password(pw)
+        print(f"\033[1mNew dashboard password:\033[0m \033[32m{pw}\033[0m")
+    else:
+        print("Usage: phantom password [show|set|reset]")
+
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
         show_help()
@@ -477,6 +523,8 @@ def main():
         cmd_opsec(args)
     elif cmd == "update":
         cmd_update(args)
+    elif cmd in ["password", "passwd"]:
+        cmd_password(args)
     else:
         show_help()
 

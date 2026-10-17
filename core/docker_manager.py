@@ -11,6 +11,39 @@ from typing import Dict, List, Optional
 from .config import APPS_DIR, INSTALLED_APPS_DIR
 from .tor_manager import TorManager
 
+# Catalog app IDs: lowercase slug only. Rejects "..", slashes and anything else that could escape the apps dirs.
+APP_ID_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+ENV_KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+def is_valid_app_id(app_id: str) -> bool:
+    return isinstance(app_id, str) and bool(APP_ID_RE.match(app_id))
+
+def parse_custom_env(data) -> Dict[str, str]:
+    """
+    Normalizes user-supplied env overrides (dict or KEY=VALUE text) and rejects anything that
+    could inject extra lines into the generated .env file.
+    """
+    pairs = []
+    if isinstance(data, dict):
+        pairs = [(str(k), str(v)) for k, v in data.items()]
+    elif isinstance(data, str):
+        for raw in data.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                raise ValueError(f"Invalid env line (expected KEY=VALUE): {line[:60]}")
+            k, v = line.split("=", 1)
+            pairs.append((k.strip(), v.strip()))
+    result = {}
+    for k, v in pairs:
+        if not ENV_KEY_RE.match(k):
+            raise ValueError(f"Invalid environment variable name: {k[:60]}")
+        if any(c in v for c in "\r\n\x00"):
+            raise ValueError(f"Environment value for {k} must be a single line.")
+        result[k] = v
+    return result
+
 class DockerManager:
     """Manages Docker Compose services and privacy app lifecycles."""
 
@@ -323,6 +356,8 @@ class DockerManager:
         4. Configures Tor v3 Hidden Service for its web port.
         5. Launches docker compose up -d.
         """
+        if not is_valid_app_id(app_id):
+            return {"success": False, "error": "Invalid app id."}
         source_dir = self.apps_dir / app_id
         target_dir = self.installed_dir / app_id
 
@@ -332,6 +367,11 @@ class DockerManager:
         manifest = self.get_app_manifest(app_id)
         if not manifest:
             return {"success": False, "error": "Invalid manifest."}
+
+        try:
+            custom_env = parse_custom_env((custom_config or {}).get("custom_env") or {})
+        except ValueError as e:
+            return {"success": False, "error": str(e)}
 
         try:
             target_dir.mkdir(parents=True, exist_ok=True)
@@ -461,15 +501,11 @@ class DockerManager:
                     ft.write(content)
 
             # Apply custom env vars if provided
-            if custom_config and custom_config.get("custom_env"):
-                custom_env_data = custom_config.get("custom_env")
+            if custom_env:
                 with open(target_env, "a", encoding="utf-8") as fa:
                     fa.write("\n# --- Custom User Overrides ---\n")
-                    if isinstance(custom_env_data, dict):
-                        for k, v in custom_env_data.items():
-                            fa.write(f"{k}={v}\n")
-                    elif isinstance(custom_env_data, str):
-                        fa.write(custom_env_data.strip() + "\n")
+                    for k, v in custom_env.items():
+                        fa.write(f"{k}={v}\n")
 
             # Register Tor Hidden Service if ports defined
             if web_port:
@@ -506,6 +542,8 @@ class DockerManager:
 
     def start_app(self, app_id: str) -> Dict:
         """Starts an existing installed app."""
+        if not is_valid_app_id(app_id):
+            return {"success": False, "error": "Invalid app id."}
         app_path = self.installed_dir / app_id
         if not app_path.exists():
             return {"success": False, "error": "App not installed."}
@@ -524,6 +562,8 @@ class DockerManager:
 
     def stop_app(self, app_id: str) -> Dict:
         """Stops an installed app."""
+        if not is_valid_app_id(app_id):
+            return {"success": False, "error": "Invalid app id."}
         app_path = self.installed_dir / app_id
         if not app_path.exists():
             return {"success": False, "error": "App not installed."}
@@ -542,6 +582,8 @@ class DockerManager:
 
     def restart_app(self, app_id: str) -> Dict:
         """Restarts an installed app."""
+        if not is_valid_app_id(app_id):
+            return {"success": False, "error": "Invalid app id."}
         app_path = self.installed_dir / app_id
         if not app_path.exists():
             return {"success": False, "error": "App not installed."}
@@ -560,6 +602,8 @@ class DockerManager:
 
     def remove_app(self, app_id: str, purge_volumes: bool = False) -> Dict:
         """Stops and removes an installed app and its Tor hidden service."""
+        if not is_valid_app_id(app_id):
+            return {"success": False, "error": "Invalid app id."}
         app_path = self.installed_dir / app_id
         if not app_path.exists():
             return {"success": False, "error": "App not installed."}
@@ -583,6 +627,8 @@ class DockerManager:
         2. Executes `docker compose up -d` to recreate containers with the new image.
         3. Cleans up dangling unused images with `docker image prune -f`.
         """
+        if not is_valid_app_id(app_id):
+            return {"success": False, "error": "Invalid app id."}
         app_path = self.installed_dir / app_id
         if not app_path.exists():
             return {"success": False, "error": f"App '{app_id}' is not installed."}
@@ -672,6 +718,8 @@ class DockerManager:
 
     def get_logs(self, app_id: str, lines: int = 100) -> str:
         """Retrieves container logs for an app."""
+        if not is_valid_app_id(app_id):
+            return "Invalid app id."
         app_path = self.installed_dir / app_id
         if not app_path.exists():
             return "App not installed."

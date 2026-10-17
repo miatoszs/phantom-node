@@ -67,6 +67,9 @@ else
     echo -e "  ${C_WHITE}🧅 Tor v3 Master Onion:${C_RESET} ${C_YELLOW}Active (run 'phantom onion list')${C_RESET}"
 fi
 
+if [ -e "/var/lib/phantom-node/initial_password" ]; then
+    echo -e "  ${C_WHITE}🔑 Dashboard Login:${C_RESET}     ${C_YELLOW}sudo phantom password show${C_RESET} ${C_DIM}(then set your own: sudo phantom password set)${C_RESET}"
+fi
 echo -e "\n  ${C_WHITE}📊 System Overview:${C_RESET}"
 echo -e "    ${C_DIM}Uptime:${C_RESET}   ${UPTIME_STR}"
 echo -e "    ${C_DIM}Memory:${C_RESET}   ${MEM_INFO}"
