@@ -14,32 +14,30 @@ def _root_on_luks() -> bool:
     """True when / sits on a dm-crypt device (directly or through LVM)."""
     try:
         source = subprocess.run(["findmnt", "-no", "SOURCE", "/"], capture_output=True, text=True, timeout=3).stdout.strip()
-        if not source:
-            return False
-        tree = subprocess.run(["lsblk", "-s", "-n", "-o", "TYPE", source], capture_output=True, text=True, timeout=3).stdout
+    except Exception:
+        return False
+    return bool(source) and _on_crypt(source)
+
+
+def _on_crypt(device: str) -> bool:
+    """True when `device` sits on dm-crypt anywhere below it (e.g. LVM inside LUKS)."""
+    try:
+        tree = subprocess.run(["lsblk", "-s", "-n", "-o", "TYPE", device], capture_output=True, text=True, timeout=3).stdout
         return "crypt" in tree.split()
     except Exception:
         return False
 
 
 def _swap_safe() -> bool:
-    """No swap at all, or swap only on encrypted (dm-*) devices / zram."""
+    """No swap at all, or swap only on zram or encrypted devices."""
     try:
         lines = Path("/proc/swaps").read_text().splitlines()[1:]
     except Exception:
         return False
     for line in lines:
         dev = line.split()[0]
-        if dev.startswith("/dev/zram"):
+        if dev.startswith("/dev/zram") or _on_crypt(dev):
             continue
-        if dev.startswith("/dev/dm-") or dev.startswith("/dev/mapper/"):
-            try:
-                name = Path(dev).resolve().name
-                dm_uuid = Path(f"/sys/block/{name}/dm/uuid").read_text()
-                if dm_uuid.startswith("CRYPT-"):
-                    continue
-            except Exception:
-                pass
         return False
     return True
 

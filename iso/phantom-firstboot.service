@@ -1,0 +1,18 @@
+[Unit]
+Description=PhantomNode OS first-boot installation
+Documentation=https://github.com/miatoszs/phantom-node
+Wants=network-online.target
+After=network-online.target
+# Runs once: install.sh is removed from this path on success
+ConditionPathExists=/opt/phantom-node-src/install.sh
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/phantom-node-src/iso/phantom-firstboot.sh
+StandardOutput=journal+console
+StandardError=journal+console
+TimeoutStartSec=0
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

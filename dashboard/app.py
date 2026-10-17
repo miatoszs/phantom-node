@@ -18,7 +18,7 @@ from core.opsec_manager import OpsecManager
 from core.system_manager import SystemManager
 
 # Interactive API docs are disabled: they would advertise every privileged endpoint
-app = FastAPI(title="PhantomNode OS Dashboard", version="1.1.0", docs_url=None, redoc_url=None, openapi_url=None)
+app = FastAPI(title="PhantomNode OS Dashboard", version="1.2.0", docs_url=None, redoc_url=None, openapi_url=None)
 
 # Setup static files and templates
 STATIC_DIR = BASE_DIR / "dashboard" / "static"
