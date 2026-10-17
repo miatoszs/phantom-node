@@ -4,6 +4,7 @@ import hmac
 import json
 import os
 import secrets
+import struct
 import time
 from typing import Dict, Optional, Tuple
 
@@ -93,13 +94,15 @@ class AuthManager:
         if len(password) < _MIN_PASSWORD_LEN:
             return {"success": False, "error": f"Password must be at least {_MIN_PASSWORD_LEN} characters."}
         salt = secrets.token_bytes(16)
-        data = {
+        # Keep 2FA settings across password changes
+        data = {k: v for k, v in (self._data or {}).items() if k.startswith("totp_")}
+        data.update({
             "salt": base64.b64encode(salt).decode(),
             "hash": base64.b64encode(self._hash(password, salt)).decode(),
             # Rotating the signing key on every password change invalidates all existing sessions
             "session_key": secrets.token_hex(32),
             "updated": int(time.time()),
-        }
+        })
         self._save(data)
         if not keep_initial_file and self.initial_password_file.exists():
             try:
@@ -125,6 +128,61 @@ class AuthManager:
         except Exception:
             pass
         return None
+
+    # --------------------------------------------------------------------- TOTP
+    # RFC 6238 (SHA1, 6 digits, 30 s) - compatible with Aegis, 2FAS, KeePassXC, etc.
+
+    def totp_enabled(self) -> bool:
+        return self.is_configured() and bool(self._data.get("totp_secret"))
+
+    @staticmethod
+    def _totp_code(secret_b32: str, counter: int) -> str:
+        key = base64.b32decode(secret_b32 + "=" * (-len(secret_b32) % 8))
+        digest = hmac.new(key, struct.pack(">Q", counter), hashlib.sha1).digest()
+        offset = digest[-1] & 0x0F
+        value = struct.unpack(">I", digest[offset:offset + 4])[0] & 0x7FFFFFFF
+        return f"{value % 1_000_000:06d}"
+
+    def _match_totp(self, secret: str, code: str, last_counter: int = -1) -> Optional[int]:
+        code = (code or "").strip().replace(" ", "")
+        if not (len(code) == 6 and code.isdigit()):
+            return None
+        now = int(time.time() // 30)
+        for counter in (now - 1, now, now + 1):
+            # Refuse to accept the same (or an older) code twice: blocks replay of an observed code
+            if counter > last_counter and hmac.compare_digest(self._totp_code(secret, counter), code):
+                return counter
+        return None
+
+    def verify_totp(self, code: str) -> bool:
+        if not self.totp_enabled():
+            return True
+        counter = self._match_totp(self._data["totp_secret"], code, self._data.get("totp_last_counter", -1))
+        if counter is None:
+            return False
+        data = dict(self._data)
+        data["totp_last_counter"] = counter
+        self._save(data)
+        return True
+
+    def begin_totp_setup(self, issuer: str = "PhantomNode") -> Dict:
+        secret = base64.b32encode(secrets.token_bytes(20)).decode().rstrip("=")
+        uri = f"otpauth://totp/{issuer}:admin?secret={secret}&issuer={issuer}&algorithm=SHA1&digits=6&period=30"
+        return {"secret": secret, "uri": uri}
+
+    def enable_totp(self, secret: str, code: str) -> Dict:
+        if self._match_totp(secret, code) is None:
+            return {"success": False, "error": "Code did not match. Check the authenticator app and the server clock."}
+        data = dict(self._data)
+        data["totp_secret"] = secret
+        data["totp_last_counter"] = -1
+        self._save(data)
+        return {"success": True, "message": "Two-factor login enabled."}
+
+    def disable_totp(self) -> Dict:
+        data = {k: v for k, v in (self._data or {}).items() if not k.startswith("totp_")}
+        self._save(data)
+        return {"success": True, "message": "Two-factor login disabled."}
 
     # ----------------------------------------------------------------- throttle
 

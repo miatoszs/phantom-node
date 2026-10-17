@@ -1,0 +1,28 @@
+services:
+  kopia:
+    image: kopia/kopia:latest
+    container_name: kopia
+    restart: unless-stopped
+    hostname: phantom-node
+    ports:
+      - "51515:51515"
+    command:
+      - server
+      - start
+      - --insecure
+      - --address=0.0.0.0:51515
+      - --server-username=${KOPIA_SERVER_USER:-admin}
+      - --server-password=${KOPIA_SERVER_PASSWORD}
+    environment:
+      # Repository encryption password (needed when you create/connect a repository in the UI)
+      - KOPIA_PASSWORD=${KOPIA_PASSWORD}
+    volumes:
+      - ./config:/app/config
+      - ./cache:/app/cache
+      - ./logs:/app/logs
+      - ./repository:/repository
+      # Read-only view of every Docker volume (Vaultwarden, Nextcloud, Matrix, ...) to snapshot
+      - /var/lib/docker/volumes:/data/docker-volumes:ro
+      - /var/lib/phantom-node:/data/phantom-node:ro
+    security_opt:
+      - no-new-privileges:true

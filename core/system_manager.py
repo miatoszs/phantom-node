@@ -4,7 +4,7 @@ import subprocess
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
-from .config import BASE_DIR, PHANTOM_VERSION, DEFAULT_REPO_URL, UPDATE_MIRROR_FILE, TOR_SOCKS_PORT
+from .config import BASE_DIR, PHANTOM_VERSION, DEFAULT_REPO_URL, UPDATE_MIRROR_FILE, TOR_SOCKS_PORT, UPDATE_TRUST_FILE
 
 class SystemManager:
     """Manages PhantomNode OS updates, configurable mirrors (including Tor .onion), and system lifecycle."""
@@ -16,6 +16,7 @@ class SystemManager:
         self.mirror_file = UPDATE_MIRROR_FILE
         self.fallback_mirror_file = self.base_dir / ".update_mirror"
         self.tor_socks_port = TOR_SOCKS_PORT
+        self.trust_file = UPDATE_TRUST_FILE
 
     def get_mirror_url(self) -> str:
         """Returns the configured update mirror URL or the default official GitHub repository."""
@@ -180,6 +181,52 @@ class SystemManager:
         except Exception as e:
             return {"success": False, "error": f"Failed to reset mirror URL: {str(e)}"}
 
+    # ------------------------------------------------------------------
+    # Signed updates (opt-in). Once at least one SSH signing key is trusted,
+    # the updater only applies an origin/main commit signed by one of them, so
+    # a hijacked GitHub account or mirror cannot push code that runs as root.
+    # ------------------------------------------------------------------
+
+    def list_trusted_keys(self) -> List[str]:
+        try:
+            if self.trust_file.exists():
+                return [l.strip() for l in self.trust_file.read_text(encoding="utf-8").splitlines() if l.strip() and not l.startswith("#")]
+        except Exception:
+            pass
+        return []
+
+    def signature_required(self) -> bool:
+        return bool(self.list_trusted_keys())
+
+    def add_trusted_key(self, pubkey: str, label: str = "maintainer") -> Dict:
+        parts = pubkey.strip().split()
+        if len(parts) < 2 or not parts[0].startswith(("ssh-", "ecdsa-", "sk-")):
+            return {"success": False, "error": "Expected an SSH public key, e.g. 'ssh-ed25519 AAAA... you@host'."}
+        line = f"{label} namespaces=\"git\" {parts[0]} {parts[1]}"
+        keys = [k for k in self.list_trusted_keys() if parts[1] not in k]
+        keys.append(line)
+        self.trust_file.parent.mkdir(parents=True, exist_ok=True)
+        self.trust_file.write_text("\n".join(keys) + "\n", encoding="utf-8")
+        os.chmod(self.trust_file, 0o644)
+        return {"success": True, "message": f"Trusted update signing key added ({parts[0]}). Unsigned updates will now be refused."}
+
+    def clear_trusted_keys(self) -> Dict:
+        if self.trust_file.exists():
+            self.trust_file.unlink()
+        return {"success": True, "message": "Signed-update enforcement disabled."}
+
+    def verify_commit_signature(self, ref: str = "origin/main") -> Dict:
+        """Verifies `ref` against the trusted SSH keys. Always valid when no key is trusted."""
+        if not self.signature_required():
+            return {"required": False, "valid": True}
+        res = subprocess.run(
+            ["git", "-c", "gpg.format=ssh", "-c", f"gpg.ssh.allowedSignersFile={self.trust_file}",
+             "verify-commit", "--raw", ref],
+            cwd=str(self.base_dir), capture_output=True, text=True, timeout=10
+        )
+        detail = (res.stderr or res.stdout).strip().splitlines()
+        return {"required": True, "valid": res.returncode == 0, "detail": detail[-1] if detail else ""}
+
     def check_for_updates(self) -> Dict:
         """
         Fetches upstream repository metadata and compares local commit with origin/main.
@@ -283,6 +330,7 @@ class SystemManager:
                 "remote_commit": remote_commit,
                 "commits_behind": commits_behind,
                 "changelog": changelog,
+                "signature": self.verify_commit_signature("origin/main") if update_available else self.verify_commit_signature("HEAD"),
                 "mirror_url": mirror_url,
                 "is_onion": is_onion,
                 "is_custom_mirror": (mirror_url != self.default_repo_url)
@@ -335,6 +383,14 @@ class SystemManager:
                 return {
                     "success": False,
                     "error": f"Failed to fetch updates from mirror ({mirror_url}): {err_text}"
+                }
+
+            # 1b. Refuse unsigned / wrongly signed code when signed updates are enforced
+            sig = self.verify_commit_signature("origin/main")
+            if not sig["valid"]:
+                return {
+                    "success": False,
+                    "error": f"Update refused: origin/main is not signed by a trusted key ({sig.get('detail') or 'no valid signature'})."
                 }
 
             # 2. Reset hard to origin/main (ensures clean sync without conflicts)

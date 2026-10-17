@@ -1,0 +1,11 @@
+{
+  "id": "kopia",
+  "name": "Kopia Encrypted Backups",
+  "category": "Backup & Recovery",
+  "description": "Client-side encrypted, deduplicated snapshots of all Docker app volumes. Store the repository locally, on a USB disk, SFTP or S3 - the storage provider only ever sees ciphertext.",
+  "opsec_level": "Level 2",
+  "web_port": 51515,
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "kopia"
+}

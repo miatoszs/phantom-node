@@ -8,7 +8,7 @@
     <script>
         document.documentElement.classList.remove('no-js');
     </script>
-    <link rel="stylesheet" href="/static/css/style.css?v=1.3.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=1.4.0">
     <style>
         /* Hidden by default when JavaScript executes normally */
         #tor-nojs-banner {
@@ -378,8 +378,14 @@
                     </div>
                 </div>
                 <p class="opsec-desc">
-                    Forces memory cache drop (/proc/sys/vm/drop_caches) and initiates immediate hard machine shutdown to resist live RAM forensic capture.
+                    Flushes RAM caches, pulls swap back into memory (<code>swapoff -a</code>) and forces an immediate hard shutdown to resist live forensic capture.
+                    <b>Nuke</b> additionally runs <code>cryptsetup luksSuspend</code> on every encrypted volume, wiping the disk keys from kernel memory before power is cut.
                 </p>
+                <select id="panic-mode" class="form-control" style="margin-bottom: 10px; max-width: 320px;">
+                    <option value="poweroff">Power off (cache drop + swapoff)</option>
+                    <option value="reboot">Hard reboot</option>
+                    <option value="nuke">Nuke: wipe LUKS keys + instant power cut</option>
+                </select>
                 <button class="btn btn-danger" onclick="triggerPanic()">
                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
@@ -389,27 +395,41 @@
                 </button>
             </div>
 
-            <!-- OPSEC System Audit -->
+            <!-- OPSEC Score: live checks with fix commands -->
             <div class="opsec-section">
                 <div class="opsec-header">
-                    <div class="opsec-title">
-                        <span>Kernel & Network Hardening Audit</span>
-                    </div>
+                    <div class="opsec-title"><span>OPSEC Score</span></div>
+                    <span id="opsec-score-badge" class="tag-badge tag-ram">–</span>
                 </div>
-                <table class="opsec-audit-table">
-                    <tr>
-                        <td>TCP Timestamps (Anti-Uptime Fingerprinting)</td>
-                        <td id="audit-timestamps" style="color: var(--accent-green);">Disabled (Hardened)</td>
-                    </tr>
-                    <tr>
-                        <td>UFW Firewall Policy</td>
-                        <td id="audit-ufw" style="color: var(--accent-green);">Zero-WAN Strict Isolation</td>
-                    </tr>
-                    <tr>
-                        <td>Tor Hidden Service v3 Cryptography</td>
-                        <td style="color: var(--accent-green);">ed25519 Elliptic Curve</td>
-                    </tr>
-                </table>
+                <p class="opsec-desc" id="opsec-score-summary">Checking node configuration...</p>
+                <div id="opsec-score-list" class="opsec-checks"></div>
+            </div>
+
+            <!-- Tor v3 Client Authorization -->
+            <div class="opsec-section">
+                <div class="opsec-header">
+                    <div class="opsec-title"><span>Dashboard Onion Access Keys</span></div>
+                    <span id="onion-auth-badge" class="tag-badge tag-ram">Public</span>
+                </div>
+                <p class="opsec-desc">
+                    Once at least one device is authorized, Tor only serves the dashboard onion to devices holding a key.
+                    Others can't even reach the login page. LAN access is unaffected.
+                </p>
+                <div id="onion-auth-list" class="opsec-checks"></div>
+                <div style="display: flex; gap: 8px; margin-top: 10px;">
+                    <input type="text" id="onion-auth-name" class="form-control" placeholder="device name, e.g. phone" maxlength="32" style="flex: 1;">
+                    <button class="btn btn-secondary" onclick="addOnionClient()">Authorize device</button>
+                </div>
+                <div id="onion-auth-result" style="display: none; margin-top: 10px; padding: 10px 12px; border: 1px solid var(--tor-border); background: var(--tor-soft); border-radius: var(--radius-sm); font-size: 12px; color: var(--tor-text); word-break: break-all;"></div>
+            </div>
+
+            <!-- Audit Log -->
+            <div class="opsec-section">
+                <div class="opsec-header">
+                    <div class="opsec-title"><span>Recent Activity</span></div>
+                </div>
+                <p class="opsec-desc">Logins and privileged actions, newest first. Full log: <code>sudo phantom audit</code></p>
+                <div id="audit-log-list" class="opsec-checks" style="font-family: var(--font-mono); font-size: 11px;"></div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
@@ -481,6 +501,7 @@
                 <div id="update-changelog" style="background: #06090e; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px; font-size: 12px; font-family: monospace; max-height: 180px; overflow-y: auto; color: #94a3b8;"></div>
             </div>
 
+            <div id="update-signature" style="display: none; font-family: var(--font-mono); font-size: 11px; margin-bottom: 10px; text-align: center;"></div>
             <div id="update-status-msg" style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; text-align: center;"></div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -623,6 +644,6 @@
     <!-- Toast Notifications Container -->
     <div id="toast-container"></div>
 
-    <script src="/static/js/app.js?v=1.3.0"></script>
+    <script src="/static/js/app.js?v=1.4.0"></script>
 </body>
 </html>

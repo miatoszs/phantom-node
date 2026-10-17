@@ -1,0 +1,12 @@
+{
+  "id": "monero-wallet-rpc",
+  "name": "Monero Wallet RPC",
+  "category": "Financial Privacy",
+  "description": "Authenticated monero-wallet-rpc backed by your own Monero node. Powers WooCommerce / merchant XMR payment gateways and view-only invoice tracking without third-party nodes. Install Monero Node first.",
+  "opsec_level": "Level 3",
+  "web_port": 18083,
+  "web_port_label": "Wallet RPC Port",
+  "onion_port": 18083,
+  "memory_mb": 256,
+  "icon": "monero"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "meshtastic-web",
+  "name": "Meshtastic Web Client",
+  "category": "Off-Grid Radio",
+  "description": "Self-hosted Meshtastic client for LoRa mesh radios. Manage nodes and send AES-256 encrypted off-grid messages through a radio on your LAN, without the public client.meshtastic.org site.",
+  "opsec_level": "Level 3",
+  "web_port": 8097,
+  "onion_port": 80,
+  "memory_mb": 64,
+  "icon": "meshtastic"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "nostr-relay",
+  "name": "Nostr Relay (strfry)",
+  "category": "Encrypted Comms",
+  "description": "High-performance Nostr relay for a private community or your own notes. Publish over your .onion so clients never learn your server's IP address.",
+  "opsec_level": "Level 2",
+  "web_port": 7777,
+  "web_port_label": "Relay WebSocket Port",
+  "onion_port": 80,
+  "memory_mb": 128,
+  "icon": "nostr"
+}

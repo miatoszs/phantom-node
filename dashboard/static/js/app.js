@@ -310,9 +310,9 @@ function renderApps() {
 }
 
 function getAppIconHtml(iconSlug, appName) {
-    const localPath = `/static/icons/${iconSlug}.svg`;
-    const fallbackCdn = `https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/${iconSlug}.svg`;
-    return `<img class="app-icon-img" src="${localPath}" onerror="this.onerror=null;this.src='${fallbackCdn}';" alt="${appName}" loading="lazy">`;
+    // Icons are served locally only: a CDN fallback would leak every dashboard visit to a third party
+    const localPath = `/static/icons/${encodeURIComponent(iconSlug)}.svg`;
+    return `<img class="app-icon-img" src="${localPath}" onerror="this.onerror=null;this.src='/static/icons/generic.svg';" alt="${escapeHtml(appName)}" loading="lazy">`;
 }
 
 async function installApp(appId, appName) {
@@ -469,7 +469,8 @@ function showOnionModal(appName, onion, port) {
     document.getElementById('onion-link').href = fullOnion;
 
     const qrImg = document.getElementById('onion-qr');
-    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(fullOnion)}`;
+    // Rendered on the node itself: never hand the onion address to a third-party QR service
+    qrImg.src = `/api/qr?data=${encodeURIComponent(fullOnion)}`;
 
     modal.classList.add('open');
 }
@@ -505,6 +506,112 @@ function closeLogsModal() {
 
 function showOpsecModal() {
     document.getElementById('opsec-modal').classList.add('open');
+    loadOpsecScore();
+    loadOnionClients();
+    loadAuditLog();
+}
+
+async function loadOpsecScore() {
+    const list = document.getElementById('opsec-score-list');
+    try {
+        const res = await fetch('/api/opsec/score');
+        if (!res.ok) return;
+        const data = await res.json();
+        const badge = document.getElementById('opsec-score-badge');
+        badge.innerText = `${data.score}%`;
+        badge.className = `tag-badge ${data.level >= 2 ? 'tag-good' : 'tag-ram'}`;
+        document.getElementById('opsec-score-summary').innerText =
+            `${data.passed} of ${data.total} checks passed. ` +
+            (data.level ? `Fully meets OPSEC Level ${data.level}.` : 'Level 1 baseline not complete yet.');
+        list.innerHTML = data.checks
+            .sort((a, b) => (a.ok - b.ok) || (a.level - b.level))
+            .map(c => `
+                <div class="opsec-check ${c.ok ? 'ok' : 'fail'}">
+                    <span class="mark">${c.ok ? '✓' : '!'}</span>
+                    <div class="body">
+                        <div>${escapeHtml(c.label)}</div>
+                        ${c.ok ? '' : `<div class="fix">${escapeHtml(c.fix)}</div>`}
+                    </div>
+                    <span class="lvl">L${c.level}</span>
+                </div>`).join('');
+    } catch (e) {
+        list.innerText = 'Could not load OPSEC checks.';
+    }
+}
+
+async function loadOnionClients() {
+    const list = document.getElementById('onion-auth-list');
+    try {
+        const res = await fetch('/api/tor/auth/dashboard');
+        if (!res.ok) return;
+        const data = await res.json();
+        const badge = document.getElementById('onion-auth-badge');
+        badge.innerText = data.clients.length ? `${data.clients.length} device(s)` : 'Public';
+        badge.className = `tag-badge ${data.clients.length ? 'tag-good' : 'tag-ram'}`;
+        list.innerHTML = data.clients.map(name => `
+            <div class="opsec-check ok">
+                <span class="mark">⚿</span>
+                <div class="body">${escapeHtml(name)}</div>
+                <button class="btn btn-secondary" style="padding: 2px 8px; font-size: 11px;" data-client="${escapeHtml(name)}" onclick="removeOnionClient(this.dataset.client)">Revoke</button>
+            </div>`).join('');
+    } catch (e) {
+        list.innerText = 'Could not load authorized devices.';
+    }
+}
+
+async function addOnionClient() {
+    const input = document.getElementById('onion-auth-name');
+    const out = document.getElementById('onion-auth-result');
+    const name = input.value.trim();
+    if (!name) return;
+    const res = await fetch('/api/tor/auth/dashboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        showToast(data.detail || 'Could not authorize device.', 'error');
+        return;
+    }
+    input.value = '';
+    out.style.display = 'block';
+    out.innerHTML = `<b>Save this key now. It is shown only once.</b><br>
+        Private key for Tor Browser: <code>${escapeHtml(data.private_key)}</code><br>
+        Orbot / Tor daemon line: <code>${escapeHtml(data.auth_private_line)}</code>`;
+    loadOnionClients();
+    loadOpsecScore();
+}
+
+async function removeOnionClient(name) {
+    if (!confirm(`Revoke Tor access for "${name}"?`)) return;
+    const res = await fetch('/api/tor/auth/dashboard/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    const data = await res.json().catch(() => ({}));
+    showToast(data.message || data.detail || 'Done.', res.ok ? 'success' : 'error');
+    loadOnionClients();
+    loadOpsecScore();
+}
+
+async function loadAuditLog() {
+    const list = document.getElementById('audit-log-list');
+    try {
+        const res = await fetch('/api/audit?lines=15');
+        if (!res.ok) return;
+        const entries = await res.json();
+        list.innerHTML = entries.length ? entries.map(e => {
+            const when = new Date(e.ts * 1000).toLocaleString();
+            const what = e.path ? `${e.path} → ${e.status}` : (e.reason ? `reason: ${e.reason}` : '');
+            return `<div class="opsec-check ${e.event === 'login_failed' ? 'fail' : 'ok'}">
+                <div class="body">${escapeHtml(when)} · <b>${escapeHtml(e.event)}</b> · ${escapeHtml(e.client)}<div class="fix">${escapeHtml(what)}</div></div>
+            </div>`;
+        }).join('') : '<div class="opsec-desc">No activity recorded yet.</div>';
+    } catch (e) {
+        list.innerText = 'Could not load audit log.';
+    }
 }
 
 function closeOpsecModal() {
@@ -533,7 +640,13 @@ async function toggleUsb(arm) {
 }
 
 async function triggerPanic() {
-    if (!confirm('CRITICAL WARNING!\n\nThis will instantly purge RAM caches (/proc/sys/vm/drop_caches) and execute a FORCED HARD SHUTDOWN to defeat live physical forensic extraction.\n\nAre you sure you want to proceed?')) {
+    const mode = document.getElementById('panic-mode')?.value || 'poweroff';
+    const effects = {
+        poweroff: 'flush RAM caches, disable swap and FORCE A HARD SHUTDOWN',
+        reboot: 'flush RAM caches, disable swap and FORCE A HARD REBOOT',
+        nuke: 'WIPE ALL LUKS DISK KEYS FROM MEMORY and CUT POWER INSTANTLY (disks need the passphrase to unlock again)'
+    };
+    if (!confirm(`CRITICAL WARNING!\n\nThis will ${effects[mode]}.\n\nAre you sure you want to proceed?`)) {
         return;
     }
 
@@ -542,7 +655,7 @@ async function triggerPanic() {
         await fetch('/api/opsec/panic', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: 'poweroff', confirm: true })
+            body: JSON.stringify({ mode, confirm: true })
         });
     } catch (e) {
         showToast('Emergency trigger issued.', 'error');
@@ -644,6 +757,22 @@ async function checkUpdates(manual = false) {
                 mirrorBadgeEl.innerHTML = 'Official GitHub';
                 mirrorBadgeEl.style.background = 'rgba(56, 189, 248, 0.15)';
                 mirrorBadgeEl.style.color = 'var(--accent-cyan)';
+            }
+        }
+
+        const sigEl = document.getElementById('update-signature');
+        if (sigEl) {
+            const sig = data.signature || {};
+            if (sig.required) {
+                sigEl.style.display = 'block';
+                sigEl.style.color = sig.valid ? 'var(--signal)' : 'var(--danger)';
+                sigEl.innerText = sig.valid
+                    ? `Signature verified: ${sig.detail || 'trusted key'}`
+                    : 'Not signed by a trusted key: this update will be refused.';
+            } else {
+                sigEl.style.display = 'block';
+                sigEl.style.color = 'var(--text-dim)';
+                sigEl.innerText = 'Signed updates not enforced (sudo phantom update trust add "<ssh key>")';
             }
         }
 

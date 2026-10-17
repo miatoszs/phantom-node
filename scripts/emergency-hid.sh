@@ -7,6 +7,8 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 # Time window in seconds to safely detach before trap becomes active
 ESCAPE_WINDOW=${1:-5}
+PANIC_MODE="${PHANTOM_PANIC_MODE:-poweroff}"
+PANIC_SCRIPT="$(dirname "$(readlink -f "$0")")/panic.sh"
 
 if ! command -v evtest >/dev/null 2>&1; then
     echo "[!] Error: 'evtest' is required. Install evtest." >&2
@@ -24,9 +26,7 @@ for device in /dev/input/event*; do
                [[ "$line" =~ ^Event:.*\(EV_ABS\).*value\ -?[1-9] ]] ||
                [[ "$line" =~ ^Event:.*\(EV_REL\).*value\ -?[1-9] ]]; then
                 echo "[ALERT] Physical tampering detected on $device! Powering off..."
-                sync
-                echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
-                systemctl poweroff -f
+                bash "$PANIC_SCRIPT" "$PANIC_MODE"
             fi
         done &
     fi

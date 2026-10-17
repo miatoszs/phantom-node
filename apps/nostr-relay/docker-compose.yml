@@ -1,0 +1,14 @@
+services:
+  strfry:
+    image: dockurr/strfry:latest
+    container_name: strfry
+    restart: unless-stopped
+    ports:
+      - "7777:7777"
+    volumes:
+      - strfry_db:/app/strfry-db
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  strfry_db:

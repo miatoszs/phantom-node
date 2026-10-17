@@ -1,9 +1,13 @@
+import base64
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
 from .config import TORRC_DIR, TORRC_FILE, TOR_PHANTOM_HS_DIR, ONION_CACHE_DIR
+
+CLIENT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,32}$")
 
 class TorManager:
     """Manages Tor v3 Hidden Services dynamically for PhantomNode apps."""
@@ -246,3 +250,90 @@ class TorManager:
                     "config_file": str(conf_path)
                 })
         return services
+
+    # ------------------------------------------------------------------
+    # Tor v3 client authorization: only devices holding a private key can
+    # even fetch the onion descriptor. Without any authorized client the
+    # service stays public (anyone with the address reaches the login page).
+    # ------------------------------------------------------------------
+
+    def _auth_dir(self, service_id: str) -> Path:
+        return self.hs_base_dir / service_id / "authorized_clients"
+
+    def _chown_tor(self, path: Path):
+        try:
+            import pwd
+            tor_user = pwd.getpwnam("debian-tor")
+            os.chown(path, tor_user.pw_uid, tor_user.pw_gid)
+        except Exception:
+            pass
+
+    def list_client_auth(self, service_id: str) -> List[str]:
+        auth_dir = self._auth_dir(service_id)
+        try:
+            return sorted(p.stem for p in auth_dir.glob("*.auth"))
+        except (PermissionError, OSError):
+            return []
+
+    def add_client_auth(self, service_id: str, client_name: str) -> Dict:
+        """Generates an x25519 keypair, authorizes its public half and returns the private key once."""
+        if not CLIENT_NAME_RE.match(client_name or ""):
+            return {"success": False, "error": "Client name must be 1-32 letters, digits, '-' or '_'."}
+        onion = self.get_onion_address(service_id)
+        if not onion:
+            return {"success": False, "error": f"No onion address found for '{service_id}'."}
+        try:
+            from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+            from cryptography.hazmat.primitives import serialization
+        except ImportError:
+            return {"success": False, "error": "Python package 'cryptography' is missing. Run: phantom update"}
+
+        auth_dir = self._auth_dir(service_id)
+        auth_file = auth_dir / f"{client_name}.auth"
+        if auth_file.exists():
+            return {"success": False, "error": f"Client '{client_name}' already exists. Remove it first to rotate its key."}
+
+        key = X25519PrivateKey.generate()
+        raw_priv = key.private_bytes(serialization.Encoding.Raw, serialization.PrivateFormat.Raw, serialization.NoEncryption())
+        raw_pub = key.public_key().public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+        b32 = lambda b: base64.b32encode(b).decode().rstrip("=")
+
+        try:
+            auth_dir.mkdir(parents=True, exist_ok=True)
+            os.chmod(auth_dir, 0o700)
+            self._chown_tor(auth_dir)
+            auth_file.write_text(f"descriptor:x25519:{b32(raw_pub)}\n", encoding="utf-8")
+            os.chmod(auth_file, 0o600)
+            self._chown_tor(auth_file)
+        except Exception as e:
+            return {"success": False, "error": f"Could not write client key: {e}"}
+
+        self.reload_tor()
+        onion_id = onion.replace(".onion", "")
+        private_key = b32(raw_priv)
+        return {
+            "success": True,
+            "client": client_name,
+            "onion": onion,
+            "private_key": private_key,
+            # Line for a Tor daemon's ClientOnionAuthDir (<name>.auth_private), e.g. Orbot / Whonix
+            "auth_private_line": f"{onion_id}:descriptor:x25519:{private_key}",
+            "message": "Client authorized. Store this key now - it cannot be shown again."
+        }
+
+    def remove_client_auth(self, service_id: str, client_name: str) -> Dict:
+        if not CLIENT_NAME_RE.match(client_name or ""):
+            return {"success": False, "error": "Invalid client name."}
+        auth_file = self._auth_dir(service_id) / f"{client_name}.auth"
+        if not auth_file.exists():
+            return {"success": False, "error": f"Client '{client_name}' not found."}
+        try:
+            auth_file.unlink()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+        self.reload_tor()
+        remaining = self.list_client_auth(service_id)
+        msg = f"Client '{client_name}' revoked."
+        if not remaining:
+            msg += " No authorized clients left: the onion is public again."
+        return {"success": True, "message": msg, "clients": remaining}
