@@ -61,6 +61,11 @@ opsec_mgr = LazyManager(_init_opsec)
 system_mgr = LazyManager(_init_system)
 auth_mgr = LazyManager(_init_auth)
 
+def _flag(cond, on: str, off: str, on_color: str = "32", off_color: str = "33") -> str:
+    """Colored status word. Kept out of f-string expressions: backslashes there need Python 3.12+."""
+    color = on_color if cond else off_color
+    return f"\033[{color}m{on if cond else off}\033[0m"
+
 def check_root(action: str = "perform this action"):
     """Enforces root privileges with a user-friendly message for mutating operations."""
     if hasattr(os, "geteuid") and os.geteuid() != 0:
@@ -100,11 +105,15 @@ def show_help():
   \033[36mopsec status\033[0m                Check USB switch, firewall and kernel hardening
   \033[36mopsec arm-usb\033[0m               Arm the USB Dead Man's Switch
   \033[36mopsec disarm-usb\033[0m            Disarm the USB Dead Man's Switch
-  \033[36mopsec panic\033[0m                 Trigger immediate emergency shutdown & cache drop
+  \033[36mopsec panic [nuke|reboot]\033[0m   Emergency shutdown: cache drop, swapoff (nuke: LUKS key wipe)
   \033[36mpassword show\033[0m               Show the generated first-boot dashboard password
   \033[36mpassword set\033[0m                Set a new dashboard password (signs out all sessions)
   \033[36mpassword reset\033[0m              Generate a new random dashboard password
+  \033[36mpassword 2fa [enable|disable]\033[0m Two-factor login with an authenticator app (TOTP)
+  \033[36monion auth list|add|remove\033[0m  Tor client authorization: only approved devices reach the onion
+  \033[36maudit [N]\033[0m                   Show the last N logins and privileged dashboard actions
   \033[36mupdate [check]\033[0m              Check or apply 1-click PhantomNode OS updates
+  \033[36mupdate trust [list|add|clear]\033[0m Only apply updates signed by your SSH key
   \033[36mupdate mirror [set|reset]\033[0m   Configure upstream update mirror (Tor .onion / GitLab)
     """)
 
@@ -128,8 +137,8 @@ def cmd_status():
     print(f"  \033[1mWeb Dashboard:\033[0m         \033[32mhttp://{primary_ip}:7426\033[0m \033[90m(IP: {primary_ip}, Port: 7426)\033[0m")
     print(f"  \033[1mTor Network:\033[0m           {tor_status}")
     print(f"  \033[1mUSB Dead Man's Switch:\033[0m {usb_status}")
-    print(f"  \033[1mUFW WAN Shield:\033[0m        {'\033[32mActive\033[0m' if opsec_status['ufw_active'] else '\033[33mInactive\033[0m'}")
-    print(f"  \033[1mKernel Hardening:\033[0m      {'\033[32mApplied\033[0m' if opsec_status['sysctl_hardened'] else '\033[33mDefault\033[0m'}")
+    print(f"  \033[1mUFW WAN Shield:\033[0m        {_flag(opsec_status['ufw_active'], 'Active', 'Inactive', '32', '33')}")
+    print(f"  \033[1mKernel Hardening:\033[0m      {_flag(opsec_status['sysctl_hardened'], 'Applied', 'Default', '32', '33')}")
 
     apps = docker_mgr.list_available_apps()
     installed = [a for a in apps if a.get("is_installed")]
@@ -333,6 +342,58 @@ def cmd_app(args):
     else:
         show_help()
 
+def cmd_onion_auth(args):
+    check_root("manage Tor client authorization")
+    action = args[0] if args else "list"
+    name = args[1] if len(args) > 1 else None
+    service = args[2] if len(args) > 2 else "dashboard"
+    if action == "list":
+        service = args[1] if len(args) > 1 else "dashboard"
+        clients = tor_mgr.list_client_auth(service)
+        print(f"\n\033[1mAuthorized clients for '{service}':\033[0m")
+        if clients:
+            for c in clients:
+                print(f"  - {c}")
+        else:
+            print("  (none - the onion is reachable by anyone who knows the address)")
+        print()
+    elif action == "add" and name:
+        res = tor_mgr.add_client_auth(service, name)
+        if not res.get("success"):
+            print(f"\033[31m[!] {res.get('error')}\033[0m")
+            return
+        from core import audit_log
+        audit_log.record("tor_client_added", "cli", service=service, name=name)
+        print(f"\n\033[32m[+] {res['message']}\033[0m\n")
+        print(f"  Onion:        http://{res['onion']}")
+        print(f"  Private key:  \033[1m{res['private_key']}\033[0m   (paste into Tor Browser when it asks)")
+        print(f"  Tor daemon:   {res['auth_private_line']}")
+        print("                (save as <name>.auth_private in ClientOnionAuthDir for Orbot / Whonix)\n")
+    elif action == "remove" and name:
+        res = tor_mgr.remove_client_auth(service, name)
+        if res.get("success"):
+            from core import audit_log
+            audit_log.record("tor_client_removed", "cli", service=service, name=name)
+        print(f"[*] {res.get('message', res.get('error'))}")
+    else:
+        print("Usage: phantom onion auth [list [service] | add <name> [service] | remove <name> [service]]")
+
+def cmd_audit(args):
+    check_root("read the audit log")
+    import datetime
+    from core import audit_log
+    n = int(args[0]) if args and args[0].isdigit() else 30
+    entries = audit_log.tail(n)
+    if not entries:
+        print("Audit log is empty.")
+        return
+    for e in reversed(entries):
+        ts = datetime.datetime.fromtimestamp(e.pop("ts")).strftime("%Y-%m-%d %H:%M:%S")
+        event = e.pop("event")
+        client = e.pop("client", "")
+        extra = " ".join(f"{k}={v}" for k, v in e.items())
+        print(f"{ts}  {event:<20} {client:<15} {extra}")
+
 def cmd_onion():
     services = tor_mgr.list_services()
     print("\n\033[1m=== PhantomNode Active Tor v3 Hidden Services ===\033[0m\n")
@@ -346,10 +407,10 @@ def cmd_opsec(args):
     if not args or args[0] == "status":
         st = opsec_mgr.get_opsec_status()
         print("\n\033[1m=== PhantomNode OPSEC & Anti-Forensics Status ===\033[0m\n")
-        print(f"  USB Dead Man's Switch (nukeusb): {'\033[32mARMED\033[0m' if st['usb_switch_armed'] else '\033[33mDisarmed\033[0m'}")
-        print(f"  HID Tamper Trap:                {'\033[32mARMED\033[0m' if st['hid_trap_armed'] else '\033[33mDisarmed\033[0m'}")
-        print(f"  UFW Firewall (Zero WAN):        {'\033[32mActive\033[0m' if st['ufw_active'] else '\033[31mInactive\033[0m'}")
-        print(f"  Kernel Sysctl Hardening:        {'\033[32mApplied\033[0m' if st['sysctl_hardened'] else '\033[33mDefault\033[0m'}")
+        print(f"  USB Dead Man's Switch (nukeusb): {_flag(st['usb_switch_armed'], 'ARMED', 'Disarmed', '32', '33')}")
+        print(f"  HID Tamper Trap:                {_flag(st['hid_trap_armed'], 'ARMED', 'Disarmed', '32', '33')}")
+        print(f"  UFW Firewall (Zero WAN):        {_flag(st['ufw_active'], 'Active', 'Inactive', '32', '31')}")
+        print(f"  Kernel Sysctl Hardening:        {_flag(st['sysctl_hardened'], 'Applied', 'Default', '32', '33')}")
     elif args[0] == "arm-usb":
         check_root("arm the USB Dead Man's Switch")
         res = opsec_mgr.set_usb_switch(True)
@@ -360,13 +421,50 @@ def cmd_opsec(args):
         print(f"[*] {res.get('message', res.get('error'))}")
     elif args[0] == "panic":
         check_root("trigger panic shutdown")
-        confirm = input("\033[31m[DANGER] This will IMMEDIATELY flush RAM caches and power off the machine! Proceed? (yes/NO): \033[0m")
+        mode = args[1] if len(args) > 1 else "poweroff"
+        warning = "flush RAM caches, disable swap and power off the machine"
+        if mode == "nuke":
+            warning = "wipe LUKS keys from memory (luksSuspend) and cut power instantly"
+        elif mode == "reboot":
+            warning = "flush RAM caches, disable swap and hard-reboot the machine"
+        confirm = input(f"\033[31m[DANGER] This will IMMEDIATELY {warning}! Proceed? (yes/NO): \033[0m")
         if confirm == "yes":
-            opsec_mgr.trigger_panic("poweroff")
+            res = opsec_mgr.trigger_panic(mode)
+            if not res.get("success"):
+                print(f"\033[31m[!] {res.get('error')}\033[0m")
     else:
         show_help()
 
 def cmd_update(args):
+    if args and args[0] == "trust":
+        sub = args[1] if len(args) > 1 else "list"
+        if sub == "list":
+            keys = system_mgr.list_trusted_keys()
+            if keys:
+                print("\n\033[1mSigned updates ENFORCED. Trusted signing keys:\033[0m")
+                for k in keys:
+                    print(f"  {k[:90]}")
+            else:
+                print("\nSigned updates are not enforced (any commit on the mirror's main branch is applied).")
+            print("\nUsage: phantom update trust [list | add \"<ssh public key>\" [label] | clear]\n")
+        elif sub == "add" and len(args) > 2:
+            check_root("trust an update signing key")
+            res = system_mgr.add_trusted_key(args[2], args[3] if len(args) > 3 else "maintainer")
+            print(f"[*] {res.get('message', res.get('error'))}")
+            if res.get("success"):
+                from core import audit_log
+                audit_log.record("update_key_trusted", "cli")
+                sig = system_mgr.verify_commit_signature("HEAD")
+                state = "valid" if sig["valid"] else "NOT signed by this key"
+                print(f"[*] Signature of the currently installed commit: {state}")
+        elif sub == "clear":
+            check_root("disable signed updates")
+            from core import audit_log
+            audit_log.record("update_keys_cleared", "cli")
+            print(f"[*] {system_mgr.clear_trusted_keys()['message']}")
+        else:
+            print("Usage: phantom update trust [list | add \"<ssh public key>\" [label] | clear]")
+        return
     if args and args[0] == "mirror":
         mirror_args = args[1:]
         if not mirror_args or mirror_args[0] in ["show", "get", "status"]:
@@ -494,8 +592,35 @@ def cmd_password(args):
         pw = secrets.token_urlsafe(12)
         auth_mgr.set_password(pw)
         print(f"\033[1mNew dashboard password:\033[0m \033[32m{pw}\033[0m")
+    elif sub == "2fa":
+        action = args[1] if len(args) > 1 else "status"
+        if action == "enable":
+            setup = auth_mgr.begin_totp_setup()
+            print("\nScan this QR code with Aegis, 2FAS, KeePassXC or any TOTP app:\n")
+            try:
+                import segno
+                segno.make(setup["uri"], error="m").terminal(compact=True)
+            except Exception:
+                pass
+            print(f"\n  Manual entry secret: \033[1m{setup['secret']}\033[0m\n")
+            code = input("Enter the 6-digit code shown in the app to confirm: ")
+            res = auth_mgr.enable_totp(setup["secret"], code)
+            color = "32" if res.get("success") else "31"
+            print(f"\033[{color}m[{'+' if res.get('success') else '!'}] {res.get('message', res.get('error'))}\033[0m")
+            from core import audit_log
+            if res.get("success"):
+                audit_log.record("totp_enabled", "cli")
+        elif action == "disable":
+            res = auth_mgr.disable_totp()
+            from core import audit_log
+            audit_log.record("totp_disabled", "cli")
+            print(f"\033[33m[*] {res['message']}\033[0m")
+        else:
+            state = "\033[32menabled\033[0m" if auth_mgr.totp_enabled() else "\033[33mdisabled\033[0m"
+            print(f"Two-factor login: {state}")
+            print("Usage: phantom password 2fa [enable|disable]")
     else:
-        print("Usage: phantom password [show|set|reset]")
+        print("Usage: phantom password [show|set|reset|2fa]")
 
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
@@ -518,7 +643,12 @@ def main():
     elif cmd == "app":
         cmd_app(args)
     elif cmd == "onion":
-        cmd_onion()
+        if args and args[0] == "auth":
+            cmd_onion_auth(args[1:])
+        else:
+            cmd_onion()
+    elif cmd == "audit":
+        cmd_audit(args)
     elif cmd == "opsec":
         cmd_opsec(args)
     elif cmd == "update":

@@ -4,6 +4,10 @@ import subprocess
 from pathlib import Path
 from typing import Dict
 
+from .config import SCRIPTS_DIR
+
+PANIC_MODES = ("poweroff", "reboot", "nuke")
+
 class OpsecManager:
     """Manages physical OPSEC triggers, USB Dead Man's Switch and Emergency Hardening."""
 
@@ -76,20 +80,15 @@ class OpsecManager:
 
     def trigger_panic(self, mode: str = "poweroff") -> Dict:
         """
-        Executes immediate emergency shutdown or reboot.
-        Wipes RAM buffers and drops caches prior to poweroff.
+        Runs the shared emergency sequence (scripts/panic.sh): flush caches, swapoff,
+        optional LUKS key wipe (mode="nuke"), then a forced power-off or reboot.
         """
+        if mode not in PANIC_MODES:
+            return {"success": False, "error": f"Unknown panic mode '{mode}'. Use one of: {', '.join(PANIC_MODES)}."}
+        script = SCRIPTS_DIR / "panic.sh"
         try:
-            subprocess.run(["sync"], check=False)
-            # Try to drop filesystem caches if root
-            try:
-                with open("/proc/sys/vm/drop_caches", "w") as f:
-                    f.write("3\n")
-            except Exception:
-                pass
-
-            target_cmd = ["systemctl", "poweroff", "-f"] if mode == "poweroff" else ["systemctl", "reboot", "-f"]
-            subprocess.Popen(target_cmd)
+            # Detached so the HTTP response can still be sent before the machine goes down
+            subprocess.Popen(["bash", str(script), mode], start_new_session=True)
             return {"success": True, "message": f"Emergency {mode} initiated."}
         except Exception as e:
             return {"success": False, "error": str(e)}

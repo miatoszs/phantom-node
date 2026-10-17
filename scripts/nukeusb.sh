@@ -6,9 +6,9 @@
 export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
 INTERVAL=1
-# Command to execute when an unauthorized USB change occurs
-# Options: 'systemctl poweroff -f' or 'systemctl reboot -f'
-TRIGGER="systemctl poweroff -f"
+# Panic mode run on an unauthorized USB change: poweroff | reboot | nuke
+PANIC_MODE="${PHANTOM_PANIC_MODE:-poweroff}"
+PANIC_SCRIPT="$(dirname "$(readlink -f "$0")")/panic.sh"
 
 if ! command -v lsusb >/dev/null 2>&1; then
     echo "[!] Error: 'lsusb' is required. Install usbutils." >&2
@@ -26,9 +26,7 @@ while true; do
 
     if [[ "$current_devices" != "$prev_devices" ]]; then
         echo "[ALERT] Unauthorized USB change detected! Triggering emergency wipe and shutdown..."
-        sync
-        echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
-        $TRIGGER
+        bash "$PANIC_SCRIPT" "$PANIC_MODE"
         exit 0
     fi
 

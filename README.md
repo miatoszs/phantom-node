@@ -31,11 +31,11 @@
 6. **Physical Anti-Forensics Triggers:**
    - **USB Dead Man's Switch (`nukeusb`):** If an unauthorized USB device is inserted (or a monitored USB token is pulled), the system instantly flushes memory buffers and forces an emergency power shutdown (`poweroff -f`).
    - **HID Input Trap (`emergency-hid`):** Monitored mouse movement or unauthorized keyboard input on a headless server immediately triggers an emergency halt.
-   - **1-Click Emergency Panic Button:** Instant memory flush, swap wipe, and forced shutdown directly from the Web Dashboard.
+   - **1-Click Emergency Panic Button:** Cache flush, `swapoff -a` and forced shutdown directly from the Web Dashboard. **Nuke mode** also runs `cryptsetup luksSuspend` on every encrypted volume, wiping the disk keys from kernel memory before an instant SysRq power cut. The USB and HID triggers run the same sequence (`PHANTOM_PANIC_MODE=nuke` to make them nuke too).
 
 ---
 
-## 📦 Built-In Privacy Application Catalog (21 Tools)
+## 📦 Built-In Privacy Application Catalog (28 Tools)
 
 | Application | Category | OPSEC Level | Description |
 | :--- | :--- | :--- | :--- |
@@ -60,6 +60,13 @@
 | **Forgejo** | Development | OPSEC Level 1 | Self-hosted Git software forge (Gitea community fork) with SSH repository access over LAN and Tor. |
 | **BorgBackup Server** | Backup & Recovery | OPSEC Level 2 | Deduplicating, authenticated, and AES-256 encrypted remote backup repository over SSH. |
 | **Cockpit Console** | System Admin | OPSEC Level 1 | System and hardware management web console for monitoring CPU, RAM, storage, and system services. |
+| **Monero Wallet RPC** | Financial Privacy | OPSEC Level 3 | Authenticated `monero-wallet-rpc` on your own node: the backend for WooCommerce / merchant XMR payment gateways. |
+| **Nostr Relay (strfry)** | Encrypted Comms | OPSEC Level 2 | High-performance Nostr relay for a private community, reachable over `.onion`. |
+| **Meshtastic Web Client** | Off-Grid Radio | OPSEC Level 3 | Self-hosted client for LoRa mesh radios (AES-256 off-grid messaging) without the public web app. |
+| **Kiwix Offline Library** | Offline Knowledge | OPSEC Level 1 | Offline Wikipedia, Stack Exchange and reference libraries for air-gapped and off-grid setups. |
+| **Stirling-PDF** | Documents & Metadata | OPSEC Level 2 | Local PDF toolkit: strip metadata, redact, OCR, merge and convert without third-party uploads. Telemetry off. |
+| **Kopia Encrypted Backups** | Backup & Recovery | OPSEC Level 2 | Client-side encrypted, deduplicated snapshots of every app volume to local disk, USB, SFTP or S3. |
+| **Uptime Kuma** | Monitoring | OPSEC Level 1 | Self-hosted uptime monitor for apps, nodes and `.onion` services. |
 
 ---
 
@@ -95,6 +102,17 @@ Open the dashboard in your web browser:
 - **Local Network:** `http://<server-ip>:7426`
 - **Remote Access (Worldwide):** `http://<master-onion-address>.onion` (in Tor Browser)
 
+### 🛡️ Hardening the Dashboard Further
+```bash
+sudo phantom password 2fa enable           # TOTP second factor (Aegis, 2FAS, KeePassXC...)
+sudo phantom onion auth add phone          # Tor client auth: only keyed devices can reach the onion
+sudo phantom update trust add "ssh-ed25519 AAAA... you@host"   # only apply SSH-signed updates
+sudo phantom audit                         # logins and privileged actions
+```
+The **OPSEC** dialog in the dashboard shows a live **OPSEC Score**: each check against Levels 1-3 (2FA, onion client auth, signed updates, LUKS root, encrypted swap, USB switch...) with the command that fixes it.
+
+**Signed updates:** once a key is trusted, the updater refuses any `origin/main` commit that is not signed by it. Sign releases locally (`git config gpg.format ssh`, `git commit -S` / `git merge -S`) and push them. Merges made with GitHub's web button are signed by GitHub's key, not yours, so the updater rejects them.
+
 ### 🔑 Dashboard Login
 The dashboard (LAN and `.onion`) requires a password. On first start PhantomNode generates a random one; the installer prints it, and you can show it again on the server:
 ```bash
@@ -114,7 +132,7 @@ Passwords are stored as a salted scrypt hash in `/var/lib/phantom-node/auth.json
   - Tailored client setup guides (Feather Wallet, Bitwarden extension, WireGuard profiles, DNS resolvers, etc.).
 - **1-Click Container Updates:** Update individual container stacks with a single button or click **Update All Containers** to pull the latest images and restart all active apps.
 - **1-Click System OTA Updater:** Check GitHub for new PhantomNode OS releases directly from the header version badge and apply updates with zero downtime.
-- **Tor v3 & QR Center:** Display dedicated `.onion` addresses with one-click copy and scannable QR codes for mobile Tor Browser access.
+- **Tor v3 & QR Center:** Display dedicated `.onion` addresses with one-click copy and QR codes rendered on the node itself (no third-party QR or icon CDNs, so onion addresses never leave the box).
 - **OPSEC Control Center:** Arm or disarm the hardware USB Dead Man's Switch, check defensive triggers, or execute an emergency memory wipe and shutdown.
 
 ---
@@ -159,12 +177,18 @@ phantom onion list
 phantom opsec status
 phantom opsec arm-usb       # Arm the USB Dead Man's Switch
 phantom opsec disarm-usb    # Disarm USB defense
-phantom opsec panic         # Trigger immediate emergency shutdown & memory flush
+phantom opsec panic         # Emergency shutdown: cache flush + swapoff + forced power-off
+phantom opsec panic nuke    # ...and wipe LUKS keys from memory before cutting power
 
 # System OTA Updates & Custom Tor Mirrors
 phantom password show       # Show the first-boot dashboard password
 phantom password set        # Set your own dashboard password
 phantom password reset      # Generate a new random dashboard password
+phantom password 2fa enable # Turn on TOTP two-factor login
+phantom onion auth add <name>    # Authorize a device for the dashboard onion (Tor client auth)
+phantom onion auth list|remove   # List / revoke authorized devices
+phantom update trust add "<ssh key>"  # Enforce signed OTA updates
+phantom audit [N]           # Show recent logins and privileged actions
 
 phantom update check        # Check for upstream releases
 phantom update              # Download latest changes and restart services

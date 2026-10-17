@@ -14,6 +14,8 @@ UPDATE_MIRROR_FILE = DATA_DIR / "update_mirror.txt"
 ONION_CACHE_DIR = DATA_DIR / "onions"
 AUTH_FILE = DATA_DIR / "auth.json"
 INITIAL_PASSWORD_FILE = DATA_DIR / "initial_password"
+AUDIT_LOG_FILE = DATA_DIR / "audit.log"
+UPDATE_TRUST_FILE = DATA_DIR / "update_allowed_signers"
 
 # Tor configurations
 TORRC_FILE = Path("/etc/tor/torrc")
