@@ -10,7 +10,6 @@
 
   /* Surfaces */
   --bg-primary: #0B0C0E;
-  --bg-sidebar: #0E1013;
   --bg-secondary: #121418;
   --bg-card: #121418;
   --bg-card-hover: #16191D;
@@ -58,7 +57,6 @@
   --radius-sm: 8px;
   --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  --sidebar-w: 240px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -83,18 +81,9 @@ code, kbd, pre { font-family: var(--font-mono); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- Shell ---------- */
-.app-shell { display: flex; min-height: 100vh; }
+.app-shell { min-height: 100vh; }
 
-.sidebar {
-  position: sticky; top: 0; height: 100vh;
-  flex: 0 0 var(--sidebar-w); width: var(--sidebar-w);
-  display: flex; flex-direction: column; gap: 28px;
-  padding: 24px 16px;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
-  overflow-y: auto;
-}
-.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; text-decoration: none; color: inherit; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; }
 .brand-icon-box {
   width: 36px; height: 36px; border-radius: 10px; flex: none;
   display: flex; align-items: center; justify-content: center;
@@ -102,44 +91,17 @@ code, kbd, pre { font-family: var(--font-mono); }
 }
 .brand-title { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; display: flex; align-items: center; gap: 6px; }
 .brand-subtitle { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-top: 2px; }
-
-.side-nav { display: flex; flex-direction: column; gap: 2px; }
-.side-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; padding: 0 12px 8px; }
-.side-link {
-  display: flex; align-items: center; gap: 12px;
-  width: 100%; min-height: 40px; padding: 0 12px;
-  border: 0; border-radius: var(--radius-sm);
-  background: transparent; color: #A9B0BA;
-  font-weight: 500; text-align: left; text-decoration: none; cursor: pointer;
-  transition: background .15s, color .15s;
-}
-.side-link svg { width: 18px; height: 18px; flex: none; }
-.side-link:hover { background: var(--bg-raised); color: var(--text-main); }
-.side-link.active { background: var(--bg-raised); color: var(--text-main); }
-.side-link .side-meta { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
-.side-link .side-dot { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--signal); }
-
-.host-card {
-  margin-top: auto;
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--bg-secondary);
-}
-.host-card .host-label { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; }
-.host-card .host-name { font-weight: 600; }
-.host-card .host-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); line-height: 1.6; }
-
-.workspace { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.os-tag { font-family: var(--font-mono); font-size: 10px; font-weight: 500; padding: 2px 5px; border-radius: 4px; background: var(--signal-soft); color: var(--signal); }
 
 /* ---------- Top bar ---------- */
 .navbar {
   position: sticky; top: 0; z-index: 100;
   display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-  padding: 16px 40px;
+  padding: 14px max(40px, calc((100vw - 1480px) / 2 + 40px));
   background: rgba(11, 12, 14, .86);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-color);
 }
-.navbar .brand { display: none; }
 .nav-badges { margin-left: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 
 .badge {
@@ -179,7 +141,7 @@ code, kbd, pre { font-family: var(--font-mono); }
 
 /* ---------- Main ---------- */
 .main-container {
-  width: 100%; max-width: 1480px;
+  width: 100%; max-width: 1480px; margin: 0 auto;
   padding: 32px 40px 64px;
   display: flex; flex-direction: column; gap: 28px;
 }
@@ -218,7 +180,7 @@ code, kbd, pre { font-family: var(--font-mono); }
 .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color); scroll-margin-top: 90px; }
 .tabs-group { display: flex; gap: 4px; padding: 4px; border-radius: var(--radius-md); background: var(--bg-sunken); border: 1px solid var(--border-color); }
 .tab-btn {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap;
   min-height: 36px; padding: 0 14px; border: 0; border-radius: var(--radius-sm);
   background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 500; cursor: pointer;
 }
@@ -394,15 +356,6 @@ code, kbd, pre { font-family: var(--font-mono); }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 900px) {
-  .app-shell { flex-direction: column; }
-  .sidebar {
-    position: static; height: auto; width: 100%; flex: none;
-    flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px;
-    padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--border-color);
-  }
-  .side-nav { flex-direction: row; flex-wrap: wrap; gap: 4px; width: 100%; }
-  .side-label, .host-card, .side-link .side-meta, .side-link .side-dot { display: none; }
-  .side-link { width: auto; }
   .navbar { padding: 12px 16px; }
   .main-container { padding: 24px 16px 48px; }
 }
@@ -410,8 +363,12 @@ code, kbd, pre { font-family: var(--font-mono); }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .stat-card { padding: 16px; }
   .stat-value { font-size: 19px; }
-  .side-link span.side-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .navbar { flex-direction: column; align-items: flex-start; }
   .nav-badges { margin-left: 0; }
+  .suggestion-button span { display: none; }
+  .tabs-group { width: 100%; }
+  .tab-btn { flex: 1 1 0; padding: 0 8px; font-size: 12px; }
+  .tab-btn svg { display: none; }
   .app-search { width: 100%; }
   .view-tools { width: 100%; }
   .welcome-note { width: 100%; }
