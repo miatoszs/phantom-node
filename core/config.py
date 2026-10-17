@@ -12,6 +12,8 @@ INSTALLED_APPS_DIR = DATA_DIR / "installed_apps"
 SCRIPTS_DIR = BASE_DIR / "scripts"
 UPDATE_MIRROR_FILE = DATA_DIR / "update_mirror.txt"
 ONION_CACHE_DIR = DATA_DIR / "onions"
+AUTH_FILE = DATA_DIR / "auth.json"
+INITIAL_PASSWORD_FILE = DATA_DIR / "initial_password"
 
 # Tor configurations
 TORRC_FILE = Path("/etc/tor/torrc")
@@ -23,7 +25,7 @@ TOR_SOCKS_PORT = int(os.environ.get("TOR_SOCKS_PORT", 9050))
 # Web dashboard settings
 DASHBOARD_HOST = os.environ.get("PHANTOM_HOST", "0.0.0.0")
 DASHBOARD_PORT = int(os.environ.get("PHANTOM_PORT", 7426))
-SECRET_KEY = os.environ.get("PHANTOM_SECRET_KEY", "phantom-node-super-secret-key-change-me")
+SESSION_TTL_SECONDS = int(os.environ.get("PHANTOM_SESSION_TTL", 12 * 3600))
 
 # Ensure required runtime directories exist if writable
 try:

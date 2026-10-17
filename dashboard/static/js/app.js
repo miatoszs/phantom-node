@@ -5,6 +5,32 @@
 let currentTab = 'installed';
 let appsData = [];
 
+// Session + CSRF handling for every API call: mutating requests carry the header the
+// backend requires, and an expired session sends the operator back to the login page.
+const nativeFetch = window.fetch.bind(window);
+window.fetch = async (input, init = {}) => {
+    const headers = new Headers(init.headers || {});
+    headers.set('X-Phantom-Request', '1');
+    const res = await nativeFetch(input, { ...init, headers, credentials: 'same-origin' });
+    if (res.status === 401 && !String(input).startsWith('/api/auth/')) {
+        window.location.replace('/login');
+    }
+    return res;
+};
+
+// Escapes text that originates outside the dashboard (git commit subjects, mirror and
+// Docker error output) before it is placed into innerHTML.
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[ch]);
+}
+
+async function logout() {
+    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (_) {}
+    window.location.replace('/login');
+}
+
 // Reusable SVG Icons for UI Actions
 const ICONS = {
     open: `<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>`,
@@ -64,6 +90,18 @@ async function fetchStatus() {
 
         // Uptime
         document.getElementById('uptime-val').innerText = data.uptime;
+
+        // Access panel: real LAN address and dashboard onion instead of placeholders
+        const lanEl = document.getElementById('access-lan');
+        if (lanEl && !window.location.hostname.endsWith('.onion')) {
+            lanEl.innerText = `${window.location.protocol}//${window.location.host}`;
+        }
+        const torEl = document.getElementById('access-tor');
+        if (torEl && data.dashboard_onion) {
+            torEl.innerText = data.dashboard_onion;
+            torEl.title = 'Click to copy';
+            torEl.onclick = () => copyEndpoint(data.dashboard_onion);
+        }
 
         // Tor Status Badge
         const torDot = document.getElementById('tor-status-dot');
@@ -565,7 +603,7 @@ async function checkUpdates(manual = false) {
         if (!res.ok || data.success === false) {
             const errMsg = data.error || data.detail || (res.status === 404 ? 'Update API endpoint not found. Please restart phantom-dashboard service.' : 'Failed to verify updates with GitHub.');
             if (statusMsg) {
-                statusMsg.innerHTML = `<span style="color:var(--accent-red);">${errMsg}</span>`;
+                statusMsg.innerHTML = `<span style="color:var(--accent-red);">${escapeHtml(errMsg)}</span>`;
             }
             if (remoteVer) {
                 remoteVer.innerText = 'offline';
@@ -621,7 +659,7 @@ async function checkUpdates(manual = false) {
                 changelogWrap.style.display = 'block';
                 changelog.innerHTML = data.changelog.map(c => `
                     <div style="margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <span style="color:var(--accent-cyan); font-weight:bold;">${c.hash}</span>: ${c.subject} <span style="color:var(--text-dim); font-size:11px;">(${c.time})</span>
+                        <span style="color:var(--accent-cyan); font-weight:bold;">${escapeHtml(c.hash)}</span>: ${escapeHtml(c.subject)} <span style="color:var(--text-dim); font-size:11px;">(${escapeHtml(c.time)})</span>
                     </div>
                 `).join('');
             }
@@ -705,7 +743,7 @@ async function saveCustomMirror() {
         }
         if (!res.ok || data.success === false) {
             const err = data.detail || data.error || 'Failed to update mirror.';
-            if (msgEl) msgEl.innerHTML = `<span style="color:var(--accent-red);">${err}</span>`;
+            if (msgEl) msgEl.innerHTML = `<span style="color:var(--accent-red);">${escapeHtml(err)}</span>`;
             showToast(err, 'error');
             return;
         }
@@ -714,7 +752,7 @@ async function saveCustomMirror() {
         const isReachable = data.connection_test ? data.connection_test.reachable : true;
         const color = isReachable ? 'var(--accent-green)' : 'var(--accent-amber)';
         if (msgEl) {
-            msgEl.innerHTML = `<span style="color:${color};">✓ Mirror configured! ${connMsg}</span>`;
+            msgEl.innerHTML = `<span style="color:${color};">✓ Mirror configured! ${escapeHtml(connMsg)}</span>`;
         }
         showToast('Update mirror successfully saved.', 'success');
         checkUpdates(true);
@@ -723,7 +761,7 @@ async function saveCustomMirror() {
             saveBtn.disabled = false;
             saveBtn.innerText = 'Save';
         }
-        if (msgEl) msgEl.innerHTML = `<span style="color:var(--accent-red);">${e.message || 'Network error'}</span>`;
+        if (msgEl) msgEl.innerHTML = `<span style="color:var(--accent-red);">${escapeHtml(e.message || 'Network error')}</span>`;
         showToast(e.message || 'Failed to update mirror.', 'error');
     }
 }
