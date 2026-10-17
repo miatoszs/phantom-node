@@ -1,0 +1,9 @@
+services:
+  meshtastic-web:
+    image: ghcr.io/meshtastic/web:latest
+    container_name: meshtastic-web
+    restart: unless-stopped
+    ports:
+      - "8097:8080"
+    security_opt:
+      - no-new-privileges:true

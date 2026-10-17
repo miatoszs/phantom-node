@@ -1,0 +1,11 @@
+{
+  "id": "stirling-pdf",
+  "name": "Stirling-PDF",
+  "category": "Documents & Metadata",
+  "description": "Local PDF toolkit: strip document metadata, redact, merge, split, OCR and convert files without uploading them to third-party services. Telemetry disabled.",
+  "opsec_level": "Level 2",
+  "web_port": 8095,
+  "onion_port": 80,
+  "memory_mb": 768,
+  "icon": "stirling-pdf"
+}

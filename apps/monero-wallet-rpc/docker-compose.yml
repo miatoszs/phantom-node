@@ -1,0 +1,22 @@
+services:
+  monero-wallet-rpc:
+    image: ghcr.io/sethforprivacy/simple-monero-wallet-rpc:latest
+    container_name: monero-wallet-rpc
+    restart: unless-stopped
+    ports:
+      - "18083:18083"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command:
+      - --wallet-dir=/home/monero/wallet
+      - --rpc-bind-port=18083
+      # Digest-auth protected RPC; the entrypoint only binds externally when a login is set
+      - --rpc-login=${WALLET_RPC_USER:-monero}:${WALLET_RPC_PASSWORD}
+      - --daemon-address=${MONERO_DAEMON:-host.docker.internal:18081}
+    volumes:
+      - wallet_data:/home/monero/wallet
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  wallet_data:

@@ -1,0 +1,11 @@
+{
+  "id": "kiwix",
+  "name": "Kiwix Offline Library",
+  "category": "Offline Knowledge",
+  "description": "Serve Wikipedia, Stack Exchange, medical and survival references fully offline. Ideal for air-gapped and off-grid setups. Starts with a small Wikipedia sample; set KIWIX_DOWNLOAD to any ZIM from download.kiwix.org.",
+  "opsec_level": "Level 1",
+  "web_port": 8099,
+  "onion_port": 80,
+  "memory_mb": 256,
+  "icon": "kiwix"
+}

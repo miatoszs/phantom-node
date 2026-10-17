@@ -1,0 +1,16 @@
+services:
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:latest
+    container_name: kiwix
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "8099:8080"
+    environment:
+      # Downloaded on start if set; drop extra .zim files into ./zim and restart to add more
+      - DOWNLOAD=${KIWIX_DOWNLOAD}
+    command: ["*.zim"]
+    volumes:
+      - ./zim:/data
+    security_opt:
+      - no-new-privileges:true

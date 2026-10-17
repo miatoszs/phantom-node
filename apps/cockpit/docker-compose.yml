@@ -1,0 +1,12 @@
+services:
+  cockpit:
+    # Official Cockpit web service container. It needs host PID + privileged mode to manage the host.
+    image: quay.io/cockpit/ws:latest
+    container_name: cockpit
+    restart: unless-stopped
+    privileged: true
+    pid: host
+    ports:
+      - "9090:9090"
+    volumes:
+      - /:/host

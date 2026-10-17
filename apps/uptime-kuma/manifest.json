@@ -1,0 +1,11 @@
+{
+  "id": "uptime-kuma",
+  "name": "Uptime Kuma",
+  "category": "Monitoring",
+  "description": "Self-hosted uptime monitor for your apps, .onion services and nodes. Alerts via ntfy, Matrix, SimpleX bots or e-mail without SaaS status pages.",
+  "opsec_level": "Level 1",
+  "web_port": 3001,
+  "onion_port": 80,
+  "memory_mb": 192,
+  "icon": "uptime-kuma"
+}

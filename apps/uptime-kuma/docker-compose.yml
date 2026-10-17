@@ -1,0 +1,17 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    extra_hosts:
+      # Lets monitors reach other PhantomNode apps via host.docker.internal:<port>
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - kuma_data:/app/data
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  kuma_data:

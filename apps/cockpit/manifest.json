@@ -2,7 +2,7 @@
   "id": "cockpit",
   "name": "Cockpit Web Console",
   "category": "System Admin",
-  "description": "Server administration dashboard. Monitor storage, hardware metrics, systemd units, network interfaces, and kernel logs via browser.",
+  "description": "Server administration console. Monitor storage, hardware metrics, systemd units, network interfaces, and kernel logs. Sign in with a Linux user account of this server.",
   "opsec_level": "Level 1",
   "web_port": 9090,
   "onion_port": 80,
