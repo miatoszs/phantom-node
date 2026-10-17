@@ -37,15 +37,14 @@
         html.no-js body {
             overflow: hidden !important;
         }
-        html.no-js .navbar,
-        html.no-js .main-container {
+        html.no-js .app-shell {
             display: none !important;
         }
     </style>
     <noscript>
         <style>
             #tor-nojs-banner { display: flex !important; }
-            .navbar, .main-container { display: none !important; }
+            .app-shell { display: none !important; }
         </style>
     </noscript>
 </head>
@@ -95,140 +94,146 @@
         </div>
     </div>
 
-    <!-- Top Navigation Bar -->
-    <header class="navbar">
+    <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" aria-label="PhantomNode navigation">
         <a href="/" class="brand">
             <div class="brand-icon-box">
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"></path>
                 </svg>
             </div>
             <div>
-                <div class="brand-title">
-                    PhantomNode <span class="os-tag">OS</span>
-                </div>
-                <div class="brand-subtitle">The Sovereign Privacy Server</div>
+                <div class="brand-title">PhantomNode</div>
+                <div class="brand-subtitle">Sovereign privacy server</div>
             </div>
         </a>
 
+        <nav class="side-nav" aria-label="Console">
+            <span class="side-label">CONSOLE</span>
+            <button type="button" class="side-link active" data-nav-tab="installed">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"></rect><rect x="14" y="3" width="7" height="5" rx="1.5"></rect><rect x="14" y="12" width="7" height="9" rx="1.5"></rect><rect x="3" y="16" width="7" height="5" rx="1.5"></rect></svg>
+                <span class="side-text">Overview</span>
+            </button>
+            <button type="button" class="side-link" data-nav-tab="catalog">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>
+                <span class="side-text">App Store</span>
+            </button>
+            <button type="button" class="side-link" onclick="showOpsecModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span class="side-text">OPSEC</span>
+                <span class="side-dot" aria-hidden="true"></span>
+            </button>
+            <button type="button" class="side-link" onclick="showUpdateModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"></path><path d="M21 3v5h-5"></path></svg>
+                <span class="side-text">Updates</span>
+            </button>
+            <a class="side-link" href="https://github.com/miatoszs/phantom-node/issues/new/choose" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z"></path><path d="M8 12h8M12 8v8"></path></svg>
+                <span class="side-text">Suggestions</span>
+            </a>
+        </nav>
+
+        <div class="host-card">
+            <span class="host-label">HOST</span>
+            <span class="host-name">PhantomNode OS</span>
+            <span class="host-meta">Debian 12 · Kicksecure<br>dashboard :7426</span>
+        </div>
+    </aside>
+
+    <div class="workspace">
+
+    <!-- Top bar -->
+    <header class="navbar">
         <div class="nav-badges">
             <div id="tor-badge" class="badge badge-green">
                 <span id="tor-status-dot" class="status-dot active pulse"></span>
                 <span id="tor-status-text">Tor v3 Active</span>
             </div>
-
-            <div id="opsec-badge" class="badge badge-interactive" onclick="showOpsecModal()">
-                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button type="button" id="opsec-badge" class="badge badge-interactive" onclick="showOpsecModal()">
+                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                 </svg>
                 <span id="opsec-status-text">OPSEC Shield</span>
-            </div>
-
-            <div id="update-badge" class="badge badge-interactive" onclick="showUpdateModal()" title="System Updates">
-                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            </button>
+            <button type="button" id="update-badge" class="badge badge-interactive" onclick="showUpdateModal()" title="System Updates">
+                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="7 10 12 15 17 10"></polyline>
                     <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
                 <span id="update-badge-text">v1.1.0</span>
-            </div>
-
-            <a class="badge suggestion-button" href="https://github.com/miatoszs/phantom-node/issues/new/choose" target="_blank" rel="noopener noreferrer" title="Request an app or suggest an improvement">
-                <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"></path>
-                    <path d="M8 12h8M12 8v8"></path>
-                </svg>
-                <span>Suggestions</span>
-            </a>
+            </button>
+            <button type="button" class="btn-panic" onclick="showOpsecModal()" title="Open the emergency panic controls">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v9"></path><path d="M6.4 6.4a8 8 0 1 0 11.2 0"></path></svg>
+                <span>Panic</span>
+            </button>
         </div>
     </header>
 
     <!-- Main Workspace -->
     <main class="main-container">
 
-        <!-- Real-Time Hardware & Network Telemetry -->
         <section class="welcome-row">
             <div class="welcome-copy">
-                <div class="eyebrow"><span class="eyebrow-line"></span> PRIVATE BY DESIGN <span class="eyebrow-dot">/</span> YOUR SERVER</div>
-                <h1>Your private<br><span>corner of the internet.</span></h1>
-                <p>One calm place to run the services you trust. Your data stays yours.</p>
+                <div class="eyebrow">Zero-WAN · No ports forwarded</div>
+                <h1>Your node is dark and healthy.</h1>
+                <p>Reachable on your LAN and over Tor only. Nothing here is exposed to the open internet.</p>
             </div>
             <div class="welcome-note">
-                <span class="note-mark">✳</span>
-                <div><strong>Good to have you here.</strong><span>Your home server, at a glance.</span></div>
+                <span class="note-label">ACCESS</span>
+                <div class="note-row"><span class="k">LAN</span><span>http://&lt;server-ip&gt;:7426</span></div>
+                <div class="note-row"><span class="k">Tor</span><span class="v-tor">phantom onion list</span></div>
             </div>
         </section>
 
-        <section class="stats-grid">
+        <!-- Real-Time Hardware & Network Telemetry -->
+        <section class="stats-grid" aria-label="Telemetry">
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-header-title">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-                            <rect x="9" y="9" width="6" height="6"></rect>
-                            <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"></path>
-                        </svg>
-                        <span>CPU Usage</span>
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect></svg>
+                        <span>CPU</span>
                     </div>
                     <span id="cpu-val" class="stat-value">0%</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div id="cpu-bar" class="progress-bar-fill bar-cyan" style="width: 0%;"></div>
-                </div>
+                <div class="progress-bar-bg"><div id="cpu-bar" class="progress-bar-fill" style="width: 0%;"></div></div>
             </div>
-
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-header-title">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3M6 8V5M10 8V5M14 8V5M18 8V5M2 8h20v8H2z"></path>
-                        </svg>
-                        <span>Memory (RAM)</span>
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8h20v8H2zM6 19v-3M10 19v-3M14 19v-3M18 19v-3"></path></svg>
+                        <span>Memory</span>
                     </div>
                     <span id="ram-val" class="stat-value">0 / 0 GB</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div id="ram-bar" class="progress-bar-fill bar-purple" style="width: 0%;"></div>
-                </div>
+                <div class="progress-bar-bg"><div id="ram-bar" class="progress-bar-fill" style="width: 0%;"></div></div>
             </div>
-
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-header-title">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="22" y1="12" x2="2" y2="12"></line>
-                            <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
-                            <line x1="6" y1="16" x2="6.01" y2="16"></line>
-                            <line x1="10" y1="16" x2="10.01" y2="16"></line>
-                        </svg>
-                        <span>Storage (Disk)</span>
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+                        <span>Storage</span>
                     </div>
                     <span id="disk-val" class="stat-value">0 / 0 GB</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div id="disk-bar" class="progress-bar-fill bar-green" style="width: 0%;"></div>
-                </div>
+                <div class="progress-bar-bg"><div id="disk-bar" class="progress-bar-fill" style="width: 0%;"></div></div>
             </div>
-
             <div class="stat-card">
                 <div class="stat-header">
                     <div class="stat-header-title">
-                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
+                        <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                         <span>Uptime</span>
                     </div>
                     <span id="uptime-val" class="stat-value">0h 0m</span>
                 </div>
-                <div style="font-size: 11px; color: var(--accent-cyan); font-weight: 600; display: flex; align-items: center; gap: 4px;">
-                    Zero-WAN Policy Active
-                </div>
+                <div class="stat-foot">Zero-WAN policy active</div>
             </div>
         </section>
 
         <!-- View Controls & Tabs -->
-        <section class="view-bar">
+        <section class="view-bar" id="apps-section">
             <div class="tabs-group">
                 <button class="tab-btn active" data-tab="installed">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -268,6 +273,8 @@
         <section id="apps-grid" class="app-grid"></section>
 
     </main>
+    </div><!-- /workspace -->
+    </div><!-- /app-shell -->
 
     <!-- Tor Onion & QR Code Modal -->
     <div id="onion-modal" class="modal-overlay" onclick="handleBackdropClick(event, 'onion-modal')">
